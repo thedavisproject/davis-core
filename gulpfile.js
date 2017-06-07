@@ -1,15 +1,15 @@
-var gulp = require('gulp'),
-  tasks = require('davis-shared').build,
-  config = require('./gulp.config')(),
-  argv = require('yargs').argv;
+const gulp = require('gulp');
+const tasks = require('davis-shared').build;
+const config = require('./gulp.config')();
+const argv = require('yargs').argv;
 
-var drillPath = argv.drill,
-  allJs = config.allJs(drillPath),
-  testFiles = config.testFiles(drillPath);
+const drillPath = argv.drill;
+const allJs = config.allJs(drillPath);
+const testFiles = config.testFiles(drillPath);
 
-gulp.task('test', tasks.test(testFiles));
+gulp.task('test', tasks.test(testFiles, argv.ci));
 
-gulp.task('lint', tasks.lint(allJs));
+gulp.task('lint', tasks.lint(allJs, argv.ci));
 
 gulp.task('watch', function() {
   gulp.watch(allJs, ['lint', 'test']);
