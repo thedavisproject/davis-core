@@ -12,20 +12,14 @@ module.exports =
     // buildResults :: [a] -> Task b
     const buildResults = R.curry(function(requestedDataSetIds, individuals){
 
-      const requestedDataSetMap = thread(
-        requestedDataSetIds,
-        R.indexBy(R.identity),
-        R.map(() => []));
-
-      const individualsByDataSet = thread(
-        individuals,
+      // Group by data set and add the data set id to the results
+      return thread(individuals,
         R.groupBy(R.prop('dataSet')),
-        R.map(R.map(i => i.facts)));
-
-      // Merge the empty data set map with the individuals by data set.
-      // This will create empty individual sets for requested ids that don't
-      // have any data.
-      return R.merge(requestedDataSetMap, individualsByDataSet);
+        R.toPairs,
+        R.map(([key, value]) => ({
+          dataSet: +key,
+          data: value
+        })));
     });
 
     return (filters, dataSetIds) => thread(

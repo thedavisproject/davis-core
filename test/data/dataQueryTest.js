@@ -46,7 +46,7 @@ describe('Data Query', function(){
     return expect(result).to.be.rejectedWith('Error message');
   });
 
-  it('should return empty sets when no data is returned', function(){
+  it('should return empty array if no data found', function(){
     const {queryStub, query} = stubbIt();
 
     const results = [];
@@ -56,15 +56,11 @@ describe('Data Query', function(){
 
     return when.all([
       expect(queryStub).to.have.been.calledWith('cat', maFilter, [1,2,3]),
-      expect(result).to.eventually.deep.equal({
-        1: [],
-        2: [],
-        3: []
-      })
+      expect(result).to.eventually.deep.equal([])
     ]);
   });
 
-  it('should merge empty sets with data', function(){
+  it('should exclude data sets that have no data', function(){
     const {queryStub, query} = stubbIt();
 
     const facts = [
@@ -81,11 +77,12 @@ describe('Data Query', function(){
 
     return when.all([
       expect(queryStub).to.have.been.calledWith('cat', maFilter, [1,2,3]),
-      expect(result).to.eventually.deep.equal({
-        1: [facts],
-        2: [],
-        3: []
-      })
+      expect(result).to.eventually.deep.equal([
+        {
+          dataSet: 1,
+          data: [facts]
+        }
+      ])
     ]);
   });
 
@@ -113,10 +110,16 @@ describe('Data Query', function(){
 
     return when.all([
       expect(queryStub).to.have.been.calledWith('cat', maFilter, [1,2]),
-      expect(result).to.eventually.deep.equal({
-        1: [facts1],
-        2: [facts2]
-      })
+      expect(result).to.eventually.deep.equal([
+        {
+          dataSet: 1,
+          data: [facts1]
+        },
+        {
+          dataSet: 2,
+          data: [facts2]
+        }
+      ])
     ]);
   });
 });
