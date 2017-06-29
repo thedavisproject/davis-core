@@ -80,7 +80,7 @@ describe('Data Query', function(){
       expect(result).to.eventually.deep.equal([
         {
           dataSet: 1,
-          data: [facts]
+          data: results
         }
       ])
     ]);
@@ -113,11 +113,11 @@ describe('Data Query', function(){
       expect(result).to.eventually.deep.equal([
         {
           dataSet: 1,
-          data: [facts1]
+          data: [results[0]]
         },
         {
           dataSet: 2,
-          data: [facts2]
+          data: [results[1]]
         }
       ])
     ]);
