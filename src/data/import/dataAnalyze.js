@@ -149,7 +149,6 @@ module.exports =
         .chain(columns =>
           matchVariablesAndAttributes(columns)
             .map(([vars, attrs]) =>
-              R.values(columns).map(c => buildVariableMatch(vars, attrs, c))))
-        .map(R.indexBy(R.prop('key')));
+              R.values(columns).map(c => buildVariableMatch(vars, attrs, c))));
     });
   };
