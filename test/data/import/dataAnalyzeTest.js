@@ -141,13 +141,12 @@ describe('Analyze', function(){
     const results = task2Promise(analyze(56, dataStream));
 
     return when.all([
-      expect(results.then(r => r[0].attributes)).to.eventually.have.keys(['MA', 'NY']),
-      expect(results.then(r => r[0].attributes['MA'])).to.eventually.contain({
+      expect(results.then(r => r[0].attributes[0])).to.eventually.contain({
         key: 'MA',
         match: true,
         attribute: 23
       }),
-      expect(results.then(r => r[0].attributes['NY'])).to.eventually.contain({
+      expect(results.then(r => r[0].attributes[1])).to.eventually.contain({
         key: 'NY',
         match: true,
         attribute: 24
@@ -167,10 +166,9 @@ describe('Analyze', function(){
     const results = task2Promise(analyze(56, dataStream));
 
     return when.all([
-      expect(results.then(r => r[0].attributes)).to.eventually.have.keys(['MA', 'NY', 'VT']),
-      expect(results.then(r => r[0].attributes['MA'].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes['NY'].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes['VT'].match)).to.eventually.be.false
+      expect(results.then(r => r[0].attributes[0].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].attributes[1].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].attributes[2].match)).to.eventually.be.false
     ]);
   });
 
@@ -184,7 +182,7 @@ describe('Analyze', function(){
       {'Location': 'VT'}
     ]);
     const results = task2Promise(analyze(56, dataStream));
-    return expect(results.then(r => r[0].attributes)).to.eventually.have.keys(['MA', 'VT']);
+    return expect(results.then(r => r[0].attributes)).to.eventually.have.length(2);
   });
 
   it('should exclude attributes for quantitative variables', function(){
@@ -231,8 +229,8 @@ describe('Analyze', function(){
     const results = task2Promise(analyze(56, dataStream));
 
     return when.all([
-      expect(results.then(r => r[0].attributes['MA-Key'].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes['NY-Key'].match)).to.eventually.be.true
+      expect(results.then(r => r[0].attributes[0].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].attributes[1].match)).to.eventually.be.true
     ]);
   });
 
@@ -250,7 +248,7 @@ describe('Analyze', function(){
         match: true,
         variable: 67
       }),
-      expect(results.then(r => r[0].attributes['2012'])).to.eventually.contain({
+      expect(results.then(r => r[0].attributes[0])).to.eventually.contain({
         key: '2012',
         match: true,
         attribute: 56
@@ -259,7 +257,7 @@ describe('Analyze', function(){
         match: true,
         variable: 68
       }),
-      expect(results.then(r => r[1].attributes['2012'])).to.eventually.contain({
+      expect(results.then(r => r[1].attributes[0])).to.eventually.contain({
         key: '2012',
         match: true,
         attribute: 57

@@ -91,9 +91,7 @@ module.exports =
           var variableAttributes = existingAttributes[v.id] ?
             existingAttributes[v.id] : {};
 
-          vOut.attributes = R.indexBy(
-            R.prop('key'),
-            column.attributes.toArray()
+          vOut.attributes = column.attributes.toArray()
             .map(a => {
               const attr = variableAttributes[a];
 
@@ -109,7 +107,7 @@ module.exports =
                 key: a,
                 match: false
               };
-            }));
+            });
         }
 
         return vOut;
