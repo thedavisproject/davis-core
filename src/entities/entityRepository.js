@@ -250,7 +250,21 @@ const createRepository =
     };
   };
 
-module.exports = function(dependencies){
+module.exports = ({
+  dataDelete,
+  timeStamp,
+  storage,
+  catalog,
+  user
+}) => {
+
+  const dependencies = {
+    dataDelete,
+    timeStamp,
+    storage,
+    catalog,
+    user
+  };
 
   const repo = createRepository(dependencies);
 
