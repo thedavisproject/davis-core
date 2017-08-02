@@ -35,14 +35,15 @@ const toRow = R.curry(function(headers, facts){
 });
 
 const getRow = R.curry((headers, variables, attributes, individual) => thread(
-  individual,
+  individual.facts,
   R.map(fact => [variables[fact.variable].key, getValue(variables, attributes, fact)]),
   R.fromPairs,
   toRow(headers)));
 
 const generateCsvForSingleDataSet = (dataSetData, variables, attributes) => {
+
   var headers = thread(
-    dataSetData[0],
+    dataSetData[0].facts,
     R.map(f => variables[f.variable].key));
 
   return [headers].concat(dataSetData.map(getRow(headers, variables, attributes)));
@@ -57,17 +58,16 @@ module.exports =
     // queryResults -> Task(csv rows)
     const queryResultsToCsvRows = function(queryResults){
 
+
       // First we need to get all data set, variable and attribute entities
-      const dataSetIds = thread(
-        queryResults,
-        R.keys,
-        R.map(x => +x));
+      const dataSetIds =  queryResults.map(result => +result.dataSet);
 
       // Ex. {1: [[f1, f2], [f2,f3]], 2: [[f1, f2], [f2,f3]]}
       const flatFacts = thread(
         queryResults,
-        R.values,
+        R.map(result => result.data),
         R.flatten,
+        R.map(i => i.facts),
         R.flatten
       );
 
@@ -98,14 +98,13 @@ module.exports =
 
       return thread(
         queryResults,
-        R.toPairs,
-        R.map(([dataSetId, data]) => thread(
+        R.map(result => thread(
             entities,
             R.chain(([dataSets, variables, attributes]) => thread(
-              generateCsvForSingleDataSet(data, variables, attributes),
+              generateCsvForSingleDataSet(result.data, variables, attributes),
               toCsv,
               R.map(csv => ({
-                dataSet: dataSets[+dataSetId],
+                dataSet: dataSets[+result.dataSet],
                 csv
               })))))),
         R.sequence(Task.of));

@@ -12,7 +12,7 @@ const when = require('when');
 const task2Promise = Async.toPromise(when.promise);
 
 const csvExportFac = require('../../../src/data/export/csvExport');
-const { dataSet, variable, attribute, fact } = require('davis-model');
+const { dataSet, variable, attribute, individual, fact } = require('davis-model');
 const entityRepoStub = require('../../stub/entityRepositoryStub');
 
 describe('Export', function(){
@@ -23,14 +23,16 @@ describe('Export', function(){
     attribute.new(6, '6-key', 5, { key: '6-key' })];
 
   it('should export single csv', function(){
-    const queryStub = () => Task.of({
-      2: [
-        [
-          fact.newCategorical(5, 6),
-          fact.newQuantitative(7, 34.5)
+    const queryStub = () => Task.of([
+      {
+        dataSet: 2,
+        data: [
+          individual.new(1, 2, [
+            fact.newCategorical(5, 6),
+            fact.newQuantitative(7, 34.5)
+          ])
         ]
-      ]
-    });
+      }]);
 
     const entityRepo = entityRepoStub(testEntities);
     const exporter = csvExportFac({
@@ -52,18 +54,24 @@ describe('Export', function(){
       dataSet.new(2, 'My DatSet Two'),
       variable.newQuantitative(7, '7-key', { key: '7-key' })];
 
-    const queryStub = () => Task.of({
-      1: [
-        [
-          fact.newQuantitative(7, 34.5)
+    const queryStub = () => Task.of([
+      {
+        dataSet: 1,
+        data: [
+          individual.new(1, 1, [
+            fact.newQuantitative(7, 34.5)
+          ])
         ]
-      ],
-      2: [
-        [
-          fact.newQuantitative(7, 100.5)
+      },
+      {
+        dataSet: 2,
+        data: [
+          individual.new(1, 2, [
+            fact.newQuantitative(7, 100.5)
+          ])
         ]
-      ]
-    });
+      }
+    ]);
 
     const entityRepo = entityRepoStub(testEntities);
     const exporter = csvExportFac({
@@ -90,22 +98,25 @@ describe('Export', function(){
       attribute.new(7, '7-key', { key: '7-key' }),
       attribute.new(8, '8-key', { key: '8-key' })];
 
-    const queryStub = () => Task.of({
-      1: [
-        [
-          fact.newCategorical(5, 6),
-          fact.newQuantitative(7, 34.5)
-        ],
-        [
-          fact.newCategorical(5, 7),
-          fact.newQuantitative(7, 44.5)
-        ],
-        [
-          fact.newQuantitative(7, 54.5),
-          fact.newCategorical(5, 8)
+    const queryStub = () => Task.of([
+      {
+        dataSet: 1,
+        data: [
+          individual.new(1, 1, [
+            fact.newCategorical(5, 6),
+            fact.newQuantitative(7, 34.5)
+          ]),
+          individual.new(2, 1, [
+            fact.newCategorical(5, 7),
+            fact.newQuantitative(7, 44.5)
+          ]),
+          individual.new(3, 1, [
+            fact.newQuantitative(7, 54.5),
+            fact.newCategorical(5, 8)
+          ])
         ]
-      ]
-    });
+      }
+    ]);
 
     const entityRepo = entityRepoStub(testEntities);
     const exporter = csvExportFac({
@@ -130,14 +141,17 @@ describe('Export', function(){
       attribute.new(7, '7-key', { key: '7-key' }),
       attribute.new(8, '8-key', { key: '8-key' })];
 
-    const queryStub = () => Task.of({
-      1: [
-        [
-          fact.newCategorical(5, null),
-          fact.newQuantitative(7, NaN)
+    const queryStub = () => Task.of([
+      {
+        dataSet: 1,
+        data: [
+          individual.new(1, 1, [
+            fact.newCategorical(5, null),
+            fact.newQuantitative(7, NaN)
+          ])
         ]
-      ]
-    });
+      }
+    ]);
 
     const entityRepo = entityRepoStub(testEntities);
     const exporter = csvExportFac({
