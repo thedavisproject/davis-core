@@ -19,8 +19,14 @@ const getValue = (variables, attributes, fact) => {
     }
     return attributes[fact.attribute].key;
   }
-  else if(v.type === variable.types.quantitative){
+  else if(v.type === variable.types.numerical){
     if(isNaN(fact.value)){
+      return '';
+    }
+    return fact.value;
+  }
+  else if(v.type === variable.types.text){
+    if(R.isNil(fact.value)){
       return '';
     }
     return fact.value;

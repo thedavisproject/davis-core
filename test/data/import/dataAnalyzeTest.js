@@ -22,7 +22,8 @@ describe('Analyze', function(){
     variable.newCategorical(46, 'Location-Keyed', { key: 'loc'}),
     variable.newCategorical(67, 'Year'),
     variable.newCategorical(68, 'Year-Dupe'),
-    variable.newQuantitative(32, 'Percent', { scopedDataSet: 56 }),
+    variable.newNumerical(32, 'Percent', { scopedDataSet: 56 }),
+    variable.newText(39, 'Name'),
     variable.newCategorical(34, 'Make'),  // Global
     variable.newCategorical(35, 'Make', { scopedDataSet: 48 }), // Local
     attribute.new(23, 'MA', 45),
@@ -48,23 +49,17 @@ describe('Analyze', function(){
       expect(results.then(r => r[0])).to.eventually.contain({
         key:      'Location',
         match:    true,
-        variable: 45,
-        scope:    'global',
-        type:     'categorical'
+        variable: 45
       }),
       expect(results.then(r => r[1])).to.eventually.contain({
         key:      'Year',
         match:    true,
-        variable: 67,
-        scope:    'global',
-        type:     'categorical'
+        variable: 67
       }),
       expect(results.then(r => r[2])).to.eventually.contain({
         key:      'Percent',
         match:    true,
-        variable: 32,
-        scope:    'local',
-        type:     'quantitative'
+        variable: 32
       })
     ]);
   });
@@ -102,9 +97,7 @@ describe('Analyze', function(){
       expect(results.then(r => r[0])).to.eventually.contain({
         key: 'Make',
         match: true,
-        variable: 35,
-        scope: 'local',
-        type: 'categorical'
+        variable: 35
       })
     ]);
   });
@@ -123,9 +116,7 @@ describe('Analyze', function(){
       expect(results.then(r => r[0])).to.eventually.contain({
         key: 'Make',
         match: true,
-        variable: 34,
-        scope: 'global',
-        type: 'categorical'
+        variable: 34
       })
     ]);
   });
@@ -185,16 +176,19 @@ describe('Analyze', function(){
     return expect(results.then(r => r[0].attributes)).to.eventually.have.length(2);
   });
 
-  it('should exclude attributes for quantitative variables', function(){
+  it('should exclude attributes for numerical and text variables', function(){
     const entityRepository = entityRepoStub(testEntities);
     const analyze = analyzeFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([
-      {'Location': 'MA', 'Percent': .5},
-      {'Location': 'NY', 'Percent': .7}
+      {'Location': 'MA', 'Percent': .5, 'Name': 'Foo'},
+      {'Location': 'NY', 'Percent': .7, 'Name': 'Bar'}
     ]);
     const results = task2Promise(analyze(56, dataStream));
-    return expect(results.then(r => r[1].attributes)).to.eventually.not.exist;
+    return when.all([
+      expect(results.then(r => r[1].attributes)).to.eventually.not.exist,
+      expect(results.then(r => r[2].attributes)).to.eventually.not.exist
+    ]);
   });
 
   it('should match variables by key', function(){
@@ -211,9 +205,7 @@ describe('Analyze', function(){
       expect(results.then(r => r[0])).to.eventually.contain({
         key: 'loc',
         match: true,
-        variable: 46,
-        scope: 'global',
-        type: 'categorical'
+        variable: 46
       })
     ]);
   });

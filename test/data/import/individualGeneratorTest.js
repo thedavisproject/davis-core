@@ -13,7 +13,8 @@ describe('Import process', function() {
   const commonTestEntities = [
     variable.newCategorical(72, 'Location'),
     variable.newCategorical(98, 'Year'),
-    variable.newQuantitative(600, 'Percent'),
+    variable.newNumerical(600, 'Percent'),
+    variable.newText(700, 'Name'),
     variable.newCategorical(73, 'Location-Keyed', { key: 'loc'}),
     attribute.new(4, '2012', 98),
     attribute.new(5, '2013', 98),
@@ -37,6 +38,9 @@ describe('Import process', function() {
         },
         {
           variable: 600
+        },
+        {
+          variable: 700
         }
       ]
     });
@@ -48,11 +52,13 @@ describe('Import process', function() {
     const dataStream = StreamTest['v2'].fromObjects([{
       Location: 'MA',
       Year: '2012',
-      Percent: .5
+      Percent: .5,
+      Name: 'Foo'
     }, {
       Location: 'NY',
       Year: '2013',
-      Percent: .7
+      Percent: .7,
+      Name: 'Bar'
     }]);
 
     const outStream = StreamTest['v2'].toObjects(
@@ -62,7 +68,7 @@ describe('Import process', function() {
 
         expect(results[0].id).to.equal(1);
         expect(results[0].dataSet).to.equal(56);
-        expect(results[0].facts).to.have.length(3);
+        expect(results[0].facts).to.have.length(4);
 
         expect(results[0].facts[0]).to.deep.equal({
           variable: 72,
@@ -78,8 +84,14 @@ describe('Import process', function() {
 
         expect(results[0].facts[2]).to.deep.equal({
           variable: 600,
-          type: variable.types.quantitative,
+          type: variable.types.numerical,
           value: 0.5
+        });
+
+        expect(results[0].facts[3]).to.deep.equal({
+          variable: 700,
+          type: variable.types.text,
+          value: 'Foo'
         });
 
         expect(results[1].facts[0]).to.deep.equal({
@@ -96,8 +108,14 @@ describe('Import process', function() {
 
         expect(results[1].facts[2]).to.deep.equal({
           variable: 600,
-          type: variable.types.quantitative,
+          type: variable.types.numerical,
           value: 0.7
+        });
+
+        expect(results[1].facts[3]).to.deep.equal({
+          variable: 700,
+          type: variable.types.text,
+          value: 'Bar'
         });
 
         done();
@@ -329,7 +347,7 @@ describe('Import process', function() {
       });
   });
 
-  it('should throw error for non numerical quantitative variable', function(done) {
+  it('should throw error for non number numerical variable', function(done) {
 
     const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
       {
@@ -355,7 +373,7 @@ describe('Import process', function() {
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
-        expect(err).to.match(/Non-numerical value for quantitative variable: Percent: Non-number/);
+        expect(err).to.match(/Non-numerical value for numerical variable: Percent: Non-number/);
         done();
       }));
 
@@ -381,7 +399,11 @@ describe('Import process', function() {
       },
       {
         variable: 600
+      },
+      {
+        variable: 700
       }
+
     ]});
 
     const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
@@ -390,7 +412,8 @@ describe('Import process', function() {
     const dataStream = StreamTest['v2'].fromObjects([{
       Location: 'MA',
       Year: null,
-      Percent: null
+      Percent: null,
+      Name: null
     }]);
 
     const outStream = StreamTest['v2'].toObjects(
@@ -400,10 +423,11 @@ describe('Import process', function() {
 
         expect(results[0].id).to.equal(1);
         expect(results[0].dataSet).to.equal(56);
-        expect(results[0].facts).to.have.length(3);
+        expect(results[0].facts).to.have.length(4);
 
         expect(results[0].facts[1].attribute).to.be.null;
         expect(results[0].facts[2].value).to.be.null;
+        expect(results[0].facts[3].value).to.be.null;
 
         done();
       });
@@ -417,7 +441,7 @@ describe('Import process', function() {
       });
   });
 
-  it('should clean quantitative values', function(done) {
+  it('should clean numerical values', function(done) {
 
     const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
       {

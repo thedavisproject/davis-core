@@ -19,7 +19,8 @@ describe('Export', function(){
   const testEntities = [
     dataSet.new(2, 'My DatSet'),
     variable.newCategorical(5, '5-key', { key: '5-key' }),
-    variable.newQuantitative(7, '7-key', { key: '7-key' }),
+    variable.newNumerical(7, '7-key', { key: '7-key' }),
+    variable.newText(8, '8-key', { key: '8-key' }),
     attribute.new(6, '6-key', 5, { key: '6-key' })];
 
   it('should export single csv', function(){
@@ -29,7 +30,8 @@ describe('Export', function(){
         data: [
           individual.new(1, 2, [
             fact.newCategorical(5, 6),
-            fact.newQuantitative(7, 34.5)
+            fact.newNumerical(7, 34.5),
+            fact.newText(8, 'foo')
           ])
         ]
       }]);
@@ -44,7 +46,7 @@ describe('Export', function(){
     return when.all([
       expect(results).to.eventually.have.length(1),
       expect(results.then(r => r[0].dataSet)).to.eventually.deep.equal(testEntities[0]),
-      expect(results.then(r => r[0].csv)).to.eventually.equal('5-key,7-key\n6-key,34.5\n')
+      expect(results.then(r => r[0].csv)).to.eventually.equal('5-key,7-key,8-key\n6-key,34.5,foo\n')
     ]);
   });
 
@@ -52,14 +54,14 @@ describe('Export', function(){
     const testEntities = [
       dataSet.new(1, 'My DatSet One'),
       dataSet.new(2, 'My DatSet Two'),
-      variable.newQuantitative(7, '7-key', { key: '7-key' })];
+      variable.newNumerical(7, '7-key', { key: '7-key' })];
 
     const queryStub = () => Task.of([
       {
         dataSet: 1,
         data: [
           individual.new(1, 1, [
-            fact.newQuantitative(7, 34.5)
+            fact.newNumerical(7, 34.5)
           ])
         ]
       },
@@ -67,7 +69,7 @@ describe('Export', function(){
         dataSet: 2,
         data: [
           individual.new(1, 2, [
-            fact.newQuantitative(7, 100.5)
+            fact.newNumerical(7, 100.5)
           ])
         ]
       }
@@ -93,7 +95,7 @@ describe('Export', function(){
     const testEntities = [
       dataSet.new(1, 'My DatSet One'),
       variable.newCategorical(5, '5-key', { key: '5-key' }),
-      variable.newQuantitative(7, '7-key', { key: '7-key' }),
+      variable.newNumerical(7, '7-key', { key: '7-key' }),
       attribute.new(6, '6-key', { key: '6-key' }),
       attribute.new(7, '7-key', { key: '7-key' }),
       attribute.new(8, '8-key', { key: '8-key' })];
@@ -104,14 +106,14 @@ describe('Export', function(){
         data: [
           individual.new(1, 1, [
             fact.newCategorical(5, 6),
-            fact.newQuantitative(7, 34.5)
+            fact.newNumerical(7, 34.5)
           ]),
           individual.new(2, 1, [
             fact.newCategorical(5, 7),
-            fact.newQuantitative(7, 44.5)
+            fact.newNumerical(7, 44.5)
           ]),
           individual.new(3, 1, [
-            fact.newQuantitative(7, 54.5),
+            fact.newNumerical(7, 54.5),
             fact.newCategorical(5, 8)
           ])
         ]
@@ -136,7 +138,8 @@ describe('Export', function(){
     const testEntities = [
       dataSet.new(1, 'My DatSet One'),
       variable.newCategorical(5, '5-key', { key: '5-key' }),
-      variable.newQuantitative(7, '7-key', { key: '7-key' }),
+      variable.newNumerical(7, '7-key', { key: '7-key' }),
+      variable.newText(8, '8-key', { key: '8-key' }),
       attribute.new(6, '6-key', { key: '6-key' }),
       attribute.new(7, '7-key', { key: '7-key' }),
       attribute.new(8, '8-key', { key: '8-key' })];
@@ -147,7 +150,8 @@ describe('Export', function(){
         data: [
           individual.new(1, 1, [
             fact.newCategorical(5, null),
-            fact.newQuantitative(7, NaN)
+            fact.newNumerical(7, NaN),
+            fact.newText(8, null)
           ])
         ]
       }
@@ -163,7 +167,7 @@ describe('Export', function(){
     return when.all([
       expect(results).to.eventually.have.length(1),
       expect(results.then(r => r[0].dataSet)).to.eventually.deep.equal(testEntities[0]),
-      expect(results.then(r => r[0].csv)).to.eventually.equal('5-key,7-key\n,\n')
+      expect(results.then(r => r[0].csv)).to.eventually.equal('5-key,7-key,8-key\n,,\n')
     ]);
   });
 });

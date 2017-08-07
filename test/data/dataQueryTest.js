@@ -65,7 +65,7 @@ describe('Data Query', function(){
 
     const facts = [
       fact.newCategorical(1,1),
-      fact.newQuantitative(2,5000)
+      fact.newNumerical(2,5000)
     ];
     const results = [
       individual.new(1, 1, facts)
@@ -91,12 +91,12 @@ describe('Data Query', function(){
 
     const facts1 = [
       fact.newCategorical(1,1),
-      fact.newQuantitative(2,5000)
+      fact.newNumerical(2,5000)
     ];
 
     const facts2 = [
       fact.newCategorical(1,2),
-      fact.newQuantitative(2,45)
+      fact.newNumerical(2,45)
     ];
 
     const results = [

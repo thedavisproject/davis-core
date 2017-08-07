@@ -83,7 +83,8 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56),
+        fact.newText(11, 'Foo')
       ])
     ];
 
@@ -123,8 +124,9 @@ describe('Data Import', function(){
 
     const dataToImport = [
       individual.new(1, 1, [
-        fact.newCategorical(9, 12),  // John
-        fact.newQuantitative(10, 56) // 56 years old
+        fact.newCategorical(9, 12),
+        fact.newNumerical(10, 56),
+        fact.newText(11, 'Foo')
       ])
     ];
 
@@ -163,7 +165,7 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56)
       ])
     ];
 
@@ -199,7 +201,7 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56)
       ])
     ];
 
@@ -237,7 +239,7 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56)
       ])
     ];
 
@@ -279,7 +281,7 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56)
       ])
     ];
 
@@ -321,11 +323,11 @@ describe('Data Import', function(){
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
-        fact.newQuantitative(10, 56)
+        fact.newNumerical(10, 56)
       ]),
       individual.new(2, 1, [
         fact.newCategorical(9, 13),
-        fact.newQuantitative(10, 25)
+        fact.newNumerical(10, 25)
       ])
     ];
 

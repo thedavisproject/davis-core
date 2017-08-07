@@ -1,25 +1,27 @@
 const { isNil } = require('ramda');
+const { variable } = require('davis-model');
 
 module.exports = function(formatters){
 
   return {
-    format: function(variable, value){
+    format: function(variableWithValue, value){
 
-      if(isNil(value) || isNaN(value)){
+      if(isNil(value) ||
+         (variableWithValue.type === variable.types.numerical && isNaN(value))){
         return '';
       }
 
-      if(!variable.format){
+      if(!variableWithValue.format){
         return String(value);
       }
 
-      var formatter = formatters[variable.format.type];
+      var formatter = formatters[variableWithValue.format.type];
 
       if(!formatter){
-        throw `Invalid format type, or missing formatter: ${variable.format.type}`;
+        throw `Invalid format type, or missing formatter: ${variableWithValue.format.type}`;
       }
 
-      return formatter(value, variable.format.options);
+      return formatter(value, variableWithValue.format.options);
     }
   };
 };

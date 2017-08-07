@@ -16,7 +16,7 @@ module.exports =
       return `Error: Row ${rowIndex}. ` + error;
     };
 
-    const cleanQuantitativeValue = value => {
+    const cleanNumericalValue = value => {
       return value.toString().replace(/[$,%]/gi,'');
     };
 
@@ -46,18 +46,27 @@ module.exports =
         return Either.Right(
           fact.newCategorical(mapping.variable.id, attr));
       }
-      else{
+      else if(mapping.variable.type === variable.types.numerical){
         if(R.isNil(value)){
           return Either.Right(
-            fact.newQuantitative(mapping.variable.id, null));
+            fact.newNumerical(mapping.variable.id, null));
         }
 
-        const cleanValue = cleanQuantitativeValue(value);
+        const cleanValue = cleanNumericalValue(value);
         if(isNaN(cleanValue)){
-          return Either.Left(rowError(rowIndex, `Error: Row ${rowIndex}. Non-numerical value for quantitative variable: ${mapping.variable.key}: ${cleanValue}`));
+          return Either.Left(rowError(rowIndex, `Error: Row ${rowIndex}. Non-numerical value for numerical variable: ${mapping.variable.key}: ${cleanValue}`));
         }
         return Either.Right(
-          fact.newQuantitative(mapping.variable.id, cleanValue));
+          fact.newNumerical(mapping.variable.id, cleanValue));
+      }
+      else {
+        if(R.isNil(value)){
+          return Either.Right(
+            fact.newText(mapping.variable.id, null));
+        }
+
+        return Either.Right(
+          fact.newText(mapping.variable.id, value));
       }
     });
 

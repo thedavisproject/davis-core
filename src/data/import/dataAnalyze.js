@@ -81,9 +81,7 @@ module.exports =
         var vOut = {
           key: column.key,
           match: true,
-          variable: v.id,
-          scope: v.scopedDataSet ? 'local': 'global',
-          type: variable.fromTypeId(v.type)
+          variable: v.id
         };
 
         if(v.type === variable.types.categorical){
