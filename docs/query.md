@@ -5,7 +5,7 @@ The Query interface will be the primary method for building data reports and que
 
 ## Filters
 
-The filters object will enumerate the categorical attributes and quantitative values that should be matched to the resulting individuals.
+The filters object will enumerate the categorical attributes, numerical/text values that should be matched to the resulting individuals.
 
     [
         {
@@ -15,9 +15,14 @@ The filters object will enumerate the categorical attributes and quantitative va
         },
         {
             variable: _variableId_,
-            type: quantitative (or 1),
+            type: numerical (or 1),
             value: _decimalValue_,
             comparator: <, <=, =, >=, >
+        },
+        {
+            variable: _variableId_,
+            type: text (or 2),
+            value: _textValue_
         },
         ...
     ]
@@ -45,9 +50,13 @@ Results structure:
                     },
                     {
                         variable: _variableId_,
-                        value: _decimalValue_,     // For quantitative
-                        display: _string_          // Formatted value
+                        value: _decimalValue_     // For numerical
+                    },
+                    {
+                        variable: _variableId_,
+                        value: _textValue_        // For text
                     }
+                    ...
                     ...
                 ],
                 ...
@@ -68,9 +77,10 @@ Results structure:
 
 The API query method is a GET request, so the filter object must be serialized into a query string as follows:
 
-* Keys: ('c' || 'q') + _variable_id_
-    * 'c' for categorical, 'q' for quantitative
-    * e.g. c45, q500
+* Keys: ('c' || 'n' || 't') + _variable_id_
+    * 'c' for categorical, 'n' for numerical, 't' for text
+    * e.g. c45, n500, t75
 * Values:
     * Categorical: comma separated list of ids. (e.g.  4,5,6,10)
-    * Quantitative: _operator_ + value (e.g. <10.5  or >=6)
+    * Numerical: _operator_ + value (e.g. <10.5  or >=6)
+    * Text: text value

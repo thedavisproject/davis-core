@@ -9,7 +9,7 @@ Glossary (Ubiquitous Language)
 
 **DataSet** - A logical group of related data, such as "Population by state", or "Automobile Fuel economy".
 
-**Variable** - An overall grouping for a set of attributes or values that can be used to describe a single data row. For example, a variable may be "Location", "Weight", or "Percent". Variables can be either quantitative or categorical. Categorical variables express Attributes (see below), quantitative variables express numerical values.
+**Variable** - An overall grouping for a set of attributes or values that can be used to describe a single data row. For example, a variable may be "Location", "Weight", or "Percent". Variables can be one of categorical, numerical, or text. Categorical variables express Attributes (see below), numerical variables express numerical values, text variables express text values.
 
 **Attribute** - A member of a categorical variable. For example, the "Location" variable may have an attribute "Massachusetts".
 

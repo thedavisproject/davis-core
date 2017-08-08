@@ -5,7 +5,7 @@ Thoughts on Structuring Data
     * 1 record (individual) per row
     * 1 variable per column
 
-* Variables can be either quantitative or categorical (qualitative)
+* Variables can be numerical, text or categorical (qualitative)
 
 * Differences from Datacenter 1.x:
     * There is no single "Data" column
@@ -13,9 +13,10 @@ Thoughts on Structuring Data
 
 * Querying data will be very similar to SQL queries
     * Filter on categorical variables using exact matches (i.e. State = 'MA')
-    * Filter on quantitiative variables using <,>,<=,>=,= (i.e. Percent <= .5)
+    * Filter on numerical variables using <,>,<=,>=,= (i.e. Percent <= .5)
+    * Filter on text variables by matching text value
     * Pare down result set in the query (i.e. only return the Percent,State,Year values)
-    * Eventually allow aggregating quantitative variables
+    * Eventually allow aggregating numerical variables
         * i.e. Get all States, Males, 2012, calculate the median Percent
 
 Example 1:
@@ -31,17 +32,17 @@ In this example, there are 3 categorical variables:
 * Year
 * Gender
 
-And 2 quantitative variables:
+And 2 numerical variables:
 
 * Percent
 * Count
 
 Example 2:
 
-| Year | Make  | Model  | Engine Displacement | MPG | 
-|------|-------|--------|---------------------|-----| 
-| 2016 | Honda | Civic  | 1.5                 | 35  | 
-| 2016 | Honda | Accord | 2.4                 | 31  | 
+| Year | Make  | Model  | Engine Displacement | MPG | Car Id |
+|------|-------|--------|---------------------|-----|--------| 
+| 2016 | Honda | Civic  | 1.5                 | 35  | rkre91 | 
+| 2016 | Honda | Accord | 2.4                 | 31  | 5ht9j5 | 
 
 In this example, there are 3 categorical variables:
 
@@ -49,10 +50,14 @@ In this example, there are 3 categorical variables:
 * Make
 * Model
 
-And 2 quantitative variables:
+2 numerical variables:
 
 * Engine Displacement
 * MPG
+
+1 text variable:
+
+* Car Id
 
 
 ## 1/23/2017 Thoughts on reclassifying variables

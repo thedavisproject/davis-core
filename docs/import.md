@@ -86,24 +86,22 @@ Format for Row Output:
 
 Summary format
 
-    {
-        _column_header_: {
-            name: _column_header_,
+    [
+        {
+            key: _column_header_,
             match: true | false,
             variable: _variable_id_,
-            scope: local | global,
-            type: categorical | quantitative,
-            attributes: {                      // Only if categorical
-                _attribute_name_: {
-                    name: _attribute_name_,
+            attributes: [                      // Only if categorical
+                {
+                    key: _attribute_name_,
                     match: true | false,
                     attribute: _attribute_id_
                 },
                 ...              
-            }
+            ]
         },
         ...
-    }
+    ]
 
 ### Importer
 
