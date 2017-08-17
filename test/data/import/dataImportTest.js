@@ -1,4 +1,3 @@
-const R = require('ramda');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const sinonChai = require('sinon-chai');
@@ -22,6 +21,8 @@ const {dataSet, individual, fact} = require('davis-model');
 const importFac = require('../../../src/data/import/dataImport');
 
 const testDataModifiedDate = new Date(2016,5,24,12,30,0,0);
+
+const Transform = require('stream').Transform;
 
 describe('Data Import', function(){
 
@@ -51,18 +52,51 @@ describe('Data Import', function(){
         }))
     };
 
+    const parseDataFileStub = sinon.stub();
+
     return {
       trxStorage,
       trxRollBack,
       trxCommit,
-      storageStub
+      storageStub,
+      parseDataFileStub
     };
+  };
+
+  const stubIndividualGenerator = (expectedDataOutput, streamError) => {
+
+    // Create toIndividuals stub and return that from the toIndividuals factory
+    const toIndividualsProcessStub = sinon.stub();
+
+    const toIndividualsStub = new Transform({
+      objectMode: true,
+      transform: (chunk, encoding, callback) => {
+        if(streamError){
+          callback(new Error(streamError), null);
+          return;
+        }
+        callback(null, toIndividualsProcessStub(chunk));
+      }
+    });
+    
+    // On the first call (first item in the stream), return the expected individual
+    for(let i = 0; i < expectedDataOutput.length; i++){
+      toIndividualsProcessStub.onCall(i).returns(expectedDataOutput[i]);
+    }
+
+    const individualGeneratorStub = {
+      rawToIndividuals: sinon.stub()
+    };
+
+    individualGeneratorStub.rawToIndividuals.returns(Task.of(toIndividualsStub));
+
+    return individualGeneratorStub;
   };
 
   it('should write a single individual', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -72,14 +106,7 @@ describe('Data Import', function(){
     trxStorage.entities.update
       .returns(Task.of([testSet]));
 
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
-
+    // Stub the data stream
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
@@ -88,13 +115,28 @@ describe('Data Import', function(){
       ])
     ];
 
-    const inputStream = StreamTest['v2'].fromObjects(R.clone(dataToImport));
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
+
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filepath', 1));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
+      results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2)),
+      results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
       results.then(() => expect(trxStorage.data.create).to.have.been.calledWith('cat', dataToImport)),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
       results.then(() => expect(trxCommit).to.have.been.called)
@@ -104,7 +146,7 @@ describe('Data Import', function(){
   it('should update the data modified date', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -114,14 +156,6 @@ describe('Data Import', function(){
     trxStorage.entities.update
       .returns(Task.of([testSet]));
 
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
-
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
@@ -129,17 +163,32 @@ describe('Data Import', function(){
         fact.newText(11, 'Foo')
       ])
     ];
+    
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
-    const inputStream = StreamTest['v2'].fromObjects(dataToImport);
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
     const expectedUpdateItem = dataSet.setDataModified(testDataModifiedDate, testSet);
 
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filepath', 1));
 
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
+      results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2)),
+      results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
       results.then(() => expect(trxStorage.entities.update).to.have.been.calledWith('cat', [expectedUpdateItem])),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
       results.then(() => expect(trxCommit).to.have.been.called)
@@ -150,17 +199,9 @@ describe('Data Import', function(){
   it('should roll back transaction on stream error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     trxStorage.data.create.returns(Task.of(1));
-
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
 
     const dataToImport = [
       individual.new(1, 1, [
@@ -169,10 +210,23 @@ describe('Data Import', function(){
       ])
     ];
 
-    const inputStream = StreamTest['v2'].fromErroredObjects('Stream Error', dataToImport);
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
+
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport, 'Stream Error');
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filename', 1));
 
     // Assert
     return when.all([
@@ -186,17 +240,9 @@ describe('Data Import', function(){
   it('should roll back transaction on data insert error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     trxStorage.data.create.returns(Task.rejected('Data write error'));
-
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
 
     const dataToImport = [
       individual.new(1, 1, [
@@ -204,11 +250,24 @@ describe('Data Import', function(){
         fact.newNumerical(10, 56)
       ])
     ];
+    
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
-    const inputStream = StreamTest['v2'].fromObjects(dataToImport);
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -222,19 +281,11 @@ describe('Data Import', function(){
   it('should roll back transaction on entity read error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.rejected('Entity read error'));
-
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
 
     const dataToImport = [
       individual.new(1, 1, [
@@ -242,11 +293,24 @@ describe('Data Import', function(){
         fact.newNumerical(10, 56)
       ])
     ];
+    
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
-    const inputStream = StreamTest['v2'].fromObjects(dataToImport);
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -260,7 +324,7 @@ describe('Data Import', function(){
   it('should roll back transaction on entity update error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -270,25 +334,30 @@ describe('Data Import', function(){
     trxStorage.entities.update
       .returns(Task.rejected('Entity update error'));
 
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
-
     const dataToImport = [
       individual.new(1, 1, [
         fact.newCategorical(9, 12),
         fact.newNumerical(10, 56)
       ])
     ];
+    
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
-    const inputStream = StreamTest['v2'].fromObjects(dataToImport);
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1));
+    const results = task2Promise(importer(2, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -302,7 +371,7 @@ describe('Data Import', function(){
   it('should write records when fewer than the batch size are created', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub} = stubStorage();
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -311,14 +380,6 @@ describe('Data Import', function(){
       .returns(Task.of([testSet]));
     trxStorage.entities.update
       .returns(Task.of([testSet]));
-
-    const importer = importFac({
-      timeStamp: {
-        now: sinon.stub().returns(testDataModifiedDate)
-      },
-      storage: storageStub,
-      catalog: 'cat'
-    });
 
     const dataToImport = [
       individual.new(1, 1, [
@@ -330,11 +391,24 @@ describe('Data Import', function(){
         fact.newNumerical(10, 25)
       ])
     ];
+    
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
-    const inputStream = StreamTest['v2'].fromObjects(R.clone(dataToImport));
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
 
     // Act
-    const results = task2Promise(importer(2, inputStream, 1000));
+    const results = task2Promise(importer(2, 'filepath', 1000));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(2), // number of rows inserted
