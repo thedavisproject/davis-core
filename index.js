@@ -1,4 +1,3 @@
-
 module.exports = {
   data: {
     export: {
@@ -24,6 +23,10 @@ module.exports = {
       percent: require('./src/format/percentFormat'),
       number: require('./src/format/numberFormat')
     }
+  },
+  jobs: {
+    importJob: require('./src/jobs/importJob.js'),
+    publishJob: require('./src/jobs/publishJob.js')
   },
   publish: require('./src/publish/publish')
 };
