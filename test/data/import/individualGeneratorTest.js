@@ -3,7 +3,7 @@ const chai = require('chai');
 const {expect, assert} = chai;
 
 const StreamTest = require('streamtest');
-const { dataSet, variable, attribute } = require('davis-model');
+const { variable, attribute } = require('davis-model');
 const entityRepoStub = require('../../stub/entityRepositoryStub');
 
 const individualGeneratorFac = require('../../../src/data/import/individualGenerator');
@@ -26,26 +26,24 @@ describe('Import process', function() {
 
   it('should successfully map data to individuals when mappings are present', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', {
-      schema: [
-        {
-          variable: 72,
-          attributes: [ 45, 76 ]
-        },
-        {
-          variable: 98,
-          attributes: [4, 5]
-        },
-        {
-          variable: 600
-        },
-        {
-          variable: 700
-        }
-      ]
-    });
+    const schema = [
+      {
+        variable: 72,
+        attributes: [ 45, 76 ]
+      },
+      {
+        variable: 98,
+        attributes: [4, 5]
+      },
+      {
+        variable: 600
+      },
+      {
+        variable: 700
+      }
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
 
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
@@ -121,7 +119,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -132,16 +130,14 @@ describe('Import process', function() {
 
   it('should use keys for variables and attributes', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', {
-      schema: [
-        {
-          variable: 73,
-          attributes: [ 77, 78 ]
-        }
-      ]
-    });
+    const schema = [
+      {
+        variable: 73,
+        attributes: [ 77, 78 ]
+      }
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
 
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
@@ -175,7 +171,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -187,16 +183,14 @@ describe('Import process', function() {
 
   it('should throw error for non matching attribute', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', {
-      schema: [
-        {
-          variable: 72,
-          attributes: [ 45 ]
-        }
-      ]
-    });
+    const schema = [
+      {
+        variable: 72,
+        attributes: [ 45 ]
+      }
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -210,7 +204,7 @@ describe('Import process', function() {
         done();
       });
 
-    const streamTask = rawToIndividuals(56)
+    const streamTask = rawToIndividuals(56, schema)
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
@@ -229,16 +223,14 @@ describe('Import process', function() {
 
   it('should allow blank attributes', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', {
-      schema: [
-        {
-          variable: 73,
-          attributes: [ 77, 78 ]
-        }
-      ]
-    });
+    const schema = [
+      {
+        variable: 73,
+        attributes: [ 77, 78 ]
+      }
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -271,7 +263,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -282,9 +274,7 @@ describe('Import process', function() {
 
   it('should throw error for no schema present', function(done){
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set');
-
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -299,7 +289,7 @@ describe('Import process', function() {
 
     rawToIndividuals(56).map(s => dataStream.pipe(s))
       .fork(error => {
-        expect(error).to.match(/Invalid Data Set Schema/);
+        expect(error).to.match(/Invalid Schema/);
         done();
       },
       () => {
@@ -309,14 +299,14 @@ describe('Import process', function() {
 
   it('should throw error for non matching variable', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
+    const schema = [
       {
         variable: 72,
         attributes: [ 45 ]
       }
-    ]});
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -330,7 +320,7 @@ describe('Import process', function() {
         done();
       });
 
-    const streamTask = rawToIndividuals(56)
+    const streamTask = rawToIndividuals(56, schema)
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
@@ -349,13 +339,13 @@ describe('Import process', function() {
 
   it('should throw error for non number numerical variable', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
+    const schema = [
       {
         variable: 600
       }
-    ]});
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -369,7 +359,7 @@ describe('Import process', function() {
         done();
       });
 
-    const streamTask = rawToIndividuals(56)
+    const streamTask = rawToIndividuals(56, schema)
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
@@ -388,7 +378,7 @@ describe('Import process', function() {
 
   it('should allow nulls', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
+    const schema = [
       {
         variable: 72,
         attributes: [ 45 ]
@@ -403,10 +393,9 @@ describe('Import process', function() {
       {
         variable: 700
       }
+    ];
 
-    ]});
-
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -432,7 +421,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -443,7 +432,7 @@ describe('Import process', function() {
 
   it('should clean numerical values', function(done) {
 
-    const dataSetEntity = dataSet.new(56, 'My Data Set', { schema: [
+    const schema = [
       {
         variable: 72,
         attributes: [ 45 ]
@@ -451,9 +440,9 @@ describe('Import process', function() {
       {
         variable: 600
       }
-    ]});
+    ];
 
-    const entityRepository = entityRepoStub(commonTestEntities.concat([dataSetEntity]));
+    const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
@@ -471,7 +460,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },

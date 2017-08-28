@@ -4,7 +4,7 @@ const { thread } = util.fp;
 const { isNilOrEmpty } = util.string;
 const Task = require('data.task');
 const Either = require('data.either');
-const { dataSet, variable, attribute, individual, fact} = require('davis-model');
+const { variable, attribute, individual, fact} = require('davis-model');
 const Transform = require('stream').Transform;
 
 module.exports =
@@ -105,20 +105,20 @@ module.exports =
         R.indexBy(R.path(['variable', 'key'])));
     };
 
-    const resolveEntityMappings = dataSet => {
+    const resolveEntityMappings = schema => {
 
-      if(!dataSet.schema){
-        return Task.rejected('Invalid Data Set Schema. The Schema must be configured before importing data.');
+      if(!schema){
+        return Task.rejected('Invalid Schema. The Schema must be provided when importing data.');
       }
 
       const vars = thread(
-        dataSet.schema,
+        schema,
         R.map(R.prop('variable')),
         ids => entityRepository.queryById(variable.entityType, ids),
         R.map(R.indexBy(R.prop('id'))));
 
       const attrs = thread(
-        dataSet.schema,
+        schema,
         R.filter(R.has('attributes')),
         R.map(m => m.attributes),
         R.flatten,
@@ -127,19 +127,13 @@ module.exports =
 
       return thread(
         R.sequence(Task.of, [ vars, attrs ]),
-        R.map(([v, a]) => mergeEntitiesAndSchema(dataSet.schema, v, a)));
+        R.map(([v, a]) => mergeEntitiesAndSchema(schema, v, a)));
     };
 
-    const resolveMappings = dataSetId =>
-      thread(
-        entityRepository.queryById(dataSet.entityType, dataSetId),
-        R.map(R.head), // Should only be one
-        R.chain(resolveEntityMappings));
-
     return {
-      rawToIndividuals: dataSetId => {
+      rawToIndividuals: (dataSetId, schema) => {
 
-        const mappingsTask = resolveMappings(dataSetId);
+        const mappingsTask = resolveEntityMappings(schema);
 
         return mappingsTask.map(mappings => {
 
@@ -147,6 +141,7 @@ module.exports =
 
           const processDataRow = (reject, resolve, row) => {
             rowIndex += 1;
+
             const individualItem = createIndividual(
               dataSetId,
               mappings,

@@ -18,7 +18,7 @@ module.exports =
     parseDataFile
   }) =>
   {
-    return (dataSetId, filePath, batchSize = DEFAULT_BATCH_SIZE) =>
+    return (dataSetId, schema, filePath, batchSize = DEFAULT_BATCH_SIZE) =>
       // Wrap everything in a transaction
       storage.transact((trx, commit, rollback) => {
 
@@ -33,14 +33,14 @@ module.exports =
         };
 
         const batchPromises = [];
-        
+
         thread(
           // Create an individual processor for this data set
-          rawToIndividuals(dataSetId),
+          rawToIndividuals(dataSetId, schema),
           R.map(toIndividuals =>
             // Parse the file to raw individual objects and convert to real individuals
             parseDataFile(filePath).pipe(toIndividuals)))
-            // Fork the process to run it immediately 
+            // Fork the process to run it immediately
             // Tasks are lazy, so it must be immediately forked to keep the
             // benefits of streaming data directly into the database and not overloading
             // memory.
@@ -70,7 +70,13 @@ module.exports =
 
                         datasetQueryTask
                           .chain(ds => {
-                            const modifiedDataSet = dataSet.setDataModified(timeStamp.now(), ds[0]);
+                            const modifiedDataSet = thread(
+                              ds[0],
+                              // Set the data set's schema
+                              R.assoc('schema', schema),
+                              // Set the data set's data modified date
+                              dataSet.setDataModified(timeStamp.now()));
+
                             return trx.entities.update(catalog, [modifiedDataSet]);
                           })
                           .fork(handleError, () => {

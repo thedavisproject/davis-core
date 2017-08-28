@@ -1,3 +1,5 @@
+const R = require('ramda');
+const { thread } = require('davis-shared').fp;
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const sinonChai = require('sinon-chai');
@@ -78,7 +80,7 @@ describe('Data Import', function(){
         callback(null, toIndividualsProcessStub(chunk));
       }
     });
-    
+
     // On the first call (first item in the stream), return the expected individual
     for(let i = 0; i < expectedDataOutput.length; i++){
       toIndividualsProcessStub.onCall(i).returns(expectedDataOutput[i]);
@@ -131,7 +133,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filepath', 1));
+    const results = task2Promise(importer(2, [], 'filepath', 1));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
@@ -163,7 +165,7 @@ describe('Data Import', function(){
         fact.newText(11, 'Foo')
       ])
     ];
-    
+
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
@@ -180,14 +182,79 @@ describe('Data Import', function(){
     });
 
     // Act
-    const expectedUpdateItem = dataSet.setDataModified(testDataModifiedDate, testSet);
+    const expectedUpdateItem = thread(
+      testSet,
+      R.assoc('schema', []),
+      dataSet.setDataModified(testDataModifiedDate));
 
-    const results = task2Promise(importer(2, 'filepath', 1));
+    const results = task2Promise(importer(2, [], 'filepath', 1));
 
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
       results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2)),
+      results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
+      results.then(() => expect(trxStorage.entities.update).to.have.been.calledWith('cat', [expectedUpdateItem])),
+      results.then(() => expect(trxRollBack).to.not.have.been.called),
+      results.then(() => expect(trxCommit).to.have.been.called)
+    ]);
+
+  });
+
+  it('should set the dataset schema', function(){
+
+    // Arrange
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+
+    const testSet = dataSet.new(2, 'Test Set');
+
+    const schema = [
+      { variable: 9, attributes: [12] },
+      { variable: 10 },
+      { variable: 11 }
+    ];
+
+    trxStorage.data.create.returns(Task.of(1));
+    trxStorage.entities.query
+      .returns(Task.of([testSet]));
+    trxStorage.entities.update
+      .returns(Task.of([testSet]));
+
+    const dataToImport = [
+      individual.new(1, 1, [
+        fact.newCategorical(9, 12),
+        fact.newNumerical(10, 56),
+        fact.newText(11, 'Foo')
+      ])
+    ];
+
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
+
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
+
+    // Act
+    const expectedUpdateItem = thread(
+      testSet,
+      R.assoc('schema', schema),
+      dataSet.setDataModified(testDataModifiedDate));
+
+    const results = task2Promise(importer(2, schema, 'filepath', 1));
+
+    // Assert
+    return when.all([
+      expect(results).to.eventually.equal(1), // number of rows inserted
+      results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2, schema)),
       results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
       results.then(() => expect(trxStorage.entities.update).to.have.been.calledWith('cat', [expectedUpdateItem])),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
@@ -250,7 +317,7 @@ describe('Data Import', function(){
         fact.newNumerical(10, 56)
       ])
     ];
-    
+
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
@@ -293,7 +360,7 @@ describe('Data Import', function(){
         fact.newNumerical(10, 56)
       ])
     ];
-    
+
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
@@ -340,7 +407,7 @@ describe('Data Import', function(){
         fact.newNumerical(10, 56)
       ])
     ];
-    
+
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
@@ -391,7 +458,7 @@ describe('Data Import', function(){
         fact.newNumerical(10, 25)
       ])
     ];
-    
+
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
 
