@@ -21,7 +21,11 @@ module.exports =
     };
 
     const createFact = R.curry((rowIndex, mapping, key, value) => {
-      if(!mapping || !mapping.variable){
+      // Ignore the value if there is no mapping. this means the column is ignored and not imported
+      if(!mapping){
+        return null;
+      }
+      if(!mapping.variable){
         return Either.Left(rowError(rowIndex, `Invalid mapping for column: ${key}`));
       }
       if(mapping.variable.type === variable.types.categorical){
@@ -75,6 +79,7 @@ module.exports =
         rowValues,
         R.toPairs,
         R.map(([key, value]) => createFact(rowIndex, mappings[key], key, value)),
+        R.reject(R.isNil),
         R.sequence(Either.of),
         R.map(facts => individual.new(rowIndex, dataSetId, facts)));
     });

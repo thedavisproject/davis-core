@@ -297,7 +297,7 @@ describe('Import process', function() {
       });
   });
 
-  it('should throw error for non matching variable', function(done) {
+  it('should ignore columns that are not in the schema', function(done) {
 
     const schema = [
       {
@@ -310,25 +310,30 @@ describe('Import process', function() {
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
     const dataStream = StreamTest['v2'].fromObjects([{
-      UNKNOWN: 'MA'
+      Ignored0: 'Ignored stuff',
+      Location: 'MA',
+      Ignored1: 'More Ignored Stuff'
     }]);
 
     const outStream = StreamTest['v2'].toObjects(
-      function() {
-        //nop
-        assert.fail('Stream process should not have completed successfully');
+      function(error, results) {
+        expect(error).to.be.null;
+        expect(results).to.have.length(1);
+
+        expect(results[0].id).to.equal(1);
+        expect(results[0].dataSet).to.equal(56);
+        expect(results[0].facts).to.have.length(1);
+
+        expect(results[0].facts[0]).to.deep.equal({
+          variable: 72,
+          type: variable.types.categorical,
+          attribute: 45 
+        });
+
         done();
       });
 
-    const streamTask = rawToIndividuals(56, schema)
-      .map(s => dataStream.pipe(s))
-      .map(stream => stream.on('error', function(err){
-        expect(err).to.match(/Row 1/);
-        expect(err).to.match(/Invalid mapping for column: UNKNOWN/);
-        done();
-      }));
-
-    streamTask
+    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
