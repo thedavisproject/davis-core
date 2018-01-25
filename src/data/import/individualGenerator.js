@@ -110,6 +110,30 @@ module.exports =
         R.indexBy(R.path(['variable', 'key'])));
     };
 
+    // returns a Task of attributesById, or a failed task
+    const validateSchemaAttributes = R.curry((schema, attributesById) => {
+
+      const variableAttributePairs = R.chain(
+        v => v.attributes ? 
+        // If has attributes
+        R.map(
+          a => [v.variable, a],
+          v.attributes) :
+        // If no attributes
+        [],
+        schema);
+
+      const pairIsValid = ([variableId, attributeId]) => 
+        attributesById[attributeId] && attributesById[attributeId].variable === variableId;
+
+      const badPairs = R.reject(pairIsValid, variableAttributePairs);
+      
+      return badPairs.length === 0 ? 
+        Task.of(attributesById) :
+        Task.rejected(
+      `Invalid Schema. The schema has mismatched variable/attribute pairs: ${badPairs.map(p => p.join('/')).join(', ') }`);
+    });
+
     const resolveEntityMappings = schema => {
 
       if(!schema){
@@ -128,7 +152,8 @@ module.exports =
         R.map(m => m.attributes),
         R.flatten,
         ids => entityRepository.queryById(attribute.entityType, ids),
-        R.map(R.indexBy(R.prop('id'))));
+        R.map(R.indexBy(R.prop('id'))),
+        R.chain(validateSchemaAttributes(schema)));
 
       return thread(
         R.sequence(Task.of, [ vars, attrs ]),

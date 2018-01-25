@@ -20,8 +20,8 @@ describe('Import process', function() {
     attribute.new(5, '2013', 98),
     attribute.new(45, 'MA', 72),
     attribute.new(76, 'NY', 72),
-    attribute.new(77, 'MA', 46, { key: 'MA-Keyed' }),
-    attribute.new(78, 'NY', 46, { key: 'NY-Keyed' })
+    attribute.new(77, 'MA', 73, { key: 'MA-Keyed' }),
+    attribute.new(78, 'NY', 73, { key: 'NY-Keyed' })
   ];
 
   it('should successfully map data to individuals when mappings are present', function(done) {
@@ -297,6 +297,39 @@ describe('Import process', function() {
       });
   });
 
+  it('should throw error for attribute that does not belong to the variable specified in the schema', function(done) {
+
+    const schema = [
+      {
+        variable: 72,
+        attributes: [ 4 ] // Doesn't belong to variable 72
+      },
+      {
+        variable: 98,
+        attributes: [ 77 ] // Doesn't belong to variable 98
+      }
+    ];
+
+    const entityRepository = entityRepoStub(commonTestEntities);
+    const {rawToIndividuals} = individualGeneratorFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([{
+      Location: '2012'
+    }, {
+      Year: 'MA'
+    }]);
+
+    rawToIndividuals(56, schema)
+      .map(s => dataStream.pipe(s))
+      .fork(error => {
+        expect(error).to.match(/Invalid Schema. The schema has mismatched variable\/attribute pairs: 72\/4, 98\/77/);
+        done();
+      },
+      () => {
+        done(new Error('Expected an error case, but got success'));
+      });
+  });
+
   it('should ignore columns that are not in the schema', function(done) {
 
     const schema = [
@@ -327,7 +360,7 @@ describe('Import process', function() {
         expect(results[0].facts[0]).to.deep.equal({
           variable: 72,
           type: variable.types.categorical,
-          attribute: 45 
+          attribute: 45
         });
 
         done();
