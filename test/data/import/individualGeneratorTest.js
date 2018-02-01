@@ -26,22 +26,12 @@ describe('Import process', function() {
 
   it('should successfully map data to individuals when mappings are present', function(done) {
 
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 45, 76 ]
-      },
-      {
-        variable: 98,
-        attributes: [4, 5]
-      },
-      {
-        variable: 600
-      },
-      {
-        variable: 700
-      }
-    ];
+    const columnMappings = {
+      'Location': 72,
+      'Year': 98,
+      'Percent': 600,
+      'Name': 700
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
 
@@ -119,7 +109,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -128,14 +118,11 @@ describe('Import process', function() {
       });
   });
 
-  it('should use keys for variables and attributes', function(done) {
+  it('should use keys for attributes', function(done) {
 
-    const schema = [
-      {
-        variable: 73,
-        attributes: [ 77, 78 ]
-      }
-    ];
+    const columnMappings = {
+      'loc': 73
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
 
@@ -171,7 +158,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -183,12 +170,9 @@ describe('Import process', function() {
 
   it('should throw error for non matching attribute', function(done) {
 
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 45 ]
-      }
-    ];
+    const columnMappings = {
+      'Location': 72
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -204,11 +188,11 @@ describe('Import process', function() {
         done();
       });
 
-    const streamTask = rawToIndividuals(56, schema)
+    const streamTask = rawToIndividuals(56, columnMappings)
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
-        expect(err).to.match(/Invalid mapping for attribute: Location: UNKNOWN/);
+        expect(err).to.match(/Attribute with key {UNKNOWN} does not exist for variable {Location, 72}/);
         done();
       }));
 
@@ -223,12 +207,9 @@ describe('Import process', function() {
 
   it('should allow blank attributes', function(done) {
 
-    const schema = [
-      {
-        variable: 73,
-        attributes: [ 77, 78 ]
-      }
-    ];
+    const columnMappings = {
+      'loc': 73
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -263,7 +244,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -272,57 +253,16 @@ describe('Import process', function() {
       });
   });
 
-  it('should throw error for no schema present', function(done){
+  it('should throw error for no mappings present', function(done){
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
 
-    const dataStream = StreamTest['v2'].fromObjects([{
-      Location: 'MA',
-      Year: '2012',
-      Percent: .5
-    }, {
-      Location: 'NY',
-      Year: '2013',
-      Percent: .7
-    }]);
+    const dataStream = StreamTest['v2'].fromObjects([{}]);
 
     rawToIndividuals(56).map(s => dataStream.pipe(s))
       .fork(error => {
-        expect(error).to.match(/Invalid Schema/);
-        done();
-      },
-      () => {
-        done(new Error('Expected an error case, but got success'));
-      });
-  });
-
-  it('should throw error for attribute that does not belong to the variable specified in the schema', function(done) {
-
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 4 ] // Doesn't belong to variable 72
-      },
-      {
-        variable: 98,
-        attributes: [ 77 ] // Doesn't belong to variable 98
-      }
-    ];
-
-    const entityRepository = entityRepoStub(commonTestEntities);
-    const {rawToIndividuals} = individualGeneratorFac({entityRepository});
-
-    const dataStream = StreamTest['v2'].fromObjects([{
-      Location: '2012'
-    }, {
-      Year: 'MA'
-    }]);
-
-    rawToIndividuals(56, schema)
-      .map(s => dataStream.pipe(s))
-      .fork(error => {
-        expect(error).to.match(/Invalid Schema. The schema has mismatched variable\/attribute pairs: 72\/4, 98\/77/);
+        expect(error).to.match(/Invalid Column Mappings/);
         done();
       },
       () => {
@@ -332,12 +272,9 @@ describe('Import process', function() {
 
   it('should ignore columns that are not in the schema', function(done) {
 
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 45 ]
-      }
-    ];
+    const columnMappings = {
+      'Location': 72
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -366,7 +303,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -377,11 +314,9 @@ describe('Import process', function() {
 
   it('should throw error for non number numerical variable', function(done) {
 
-    const schema = [
-      {
-        variable: 600
-      }
-    ];
+    const columnMappings = {
+      'Percent': 600
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -397,7 +332,7 @@ describe('Import process', function() {
         done();
       });
 
-    const streamTask = rawToIndividuals(56, schema)
+    const streamTask = rawToIndividuals(56, columnMappings)
       .map(s => dataStream.pipe(s))
       .map(stream => stream.on('error', function(err){
         expect(err).to.match(/Row 1/);
@@ -416,22 +351,12 @@ describe('Import process', function() {
 
   it('should allow nulls', function(done) {
 
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 45 ]
-      },
-      {
-        variable: 98,
-        attributes: [ 4 ]
-      },
-      {
-        variable: 600
-      },
-      {
-        variable: 700
-      }
-    ];
+    const columnMappings = {
+      'Location': 72,
+      'Year': 98,
+      'Percent': 600,
+      'Name': 700
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -459,7 +384,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
@@ -470,15 +395,10 @@ describe('Import process', function() {
 
   it('should clean numerical values', function(done) {
 
-    const schema = [
-      {
-        variable: 72,
-        attributes: [ 45 ]
-      },
-      {
-        variable: 600
-      }
-    ];
+    const columnMappings = {
+      'Location': 72,
+      'Percent': 600
+    };
 
     const entityRepository = entityRepoStub(commonTestEntities);
     const {rawToIndividuals} = individualGeneratorFac({entityRepository});
@@ -498,7 +418,7 @@ describe('Import process', function() {
         done();
       });
 
-    rawToIndividuals(56, schema).map(s => dataStream.pipe(s))
+    rawToIndividuals(56, columnMappings).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },

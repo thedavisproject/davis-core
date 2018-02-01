@@ -1,7 +1,7 @@
 const R = require('ramda');
 const Task = require('data.task');
 const when = require('when');
-const {dataSet, query: q} = require('davis-model');
+const {dataSet, variable, query: q} = require('davis-model');
 const _ = require('highland');
 const Async = require('control.async')(Task);
 const task2Promise = Async.toPromise(when.promise);
@@ -18,9 +18,10 @@ module.exports =
     parseDataFile
   }) =>
   {
-    return (dataSetId, schema, filePath, batchSize = DEFAULT_BATCH_SIZE) =>
+    return (dataSetId, columnMapping, filePath, batchSize = DEFAULT_BATCH_SIZE) => {
+
       // Wrap everything in a transaction
-      storage.transact((trx, commit, rollback) => {
+      return storage.transact((trx, commit, rollback) => {
 
         let transactionEnded = false;
 
@@ -36,7 +37,7 @@ module.exports =
 
         thread(
           // Create an individual processor for this data set
-          rawToIndividuals(dataSetId, schema),
+          rawToIndividuals(dataSetId, columnMapping),
           R.map(toIndividuals =>
             // Parse the file to raw individual objects and convert to real individuals
             parseDataFile(filePath).pipe(toIndividuals)))
@@ -45,6 +46,31 @@ module.exports =
             // benefits of streaming data directly into the database and not overloading
             // memory.
             .fork(handleError, individualStream => {
+
+              // Handle recording the schma
+              let schemaMap = {};
+
+              function recordIndividualsForSchema(individuals){
+                individuals.forEach(individual =>
+                  individual.facts.forEach(f => {
+                    // If the variable has not been recorded yet
+                    if(!schemaMap[f.variable]){
+                      schemaMap[f.variable] = {
+                        variable: f.variable
+                      }; 
+                    }
+
+                    if(f.type === variable.types.categorical){
+                      if(!schemaMap[f.variable].attributes){
+                        schemaMap[f.variable].attributes = {};
+                      }
+                      if(!schemaMap[f.variable].attributes[f.attribute]){
+                        schemaMap[f.variable].attributes[f.attribute] = f.attribute;
+                      }
+                    }
+                  }));
+              }
+
               // Process the data stream with highland.js
               _(individualStream)
                 // Batch the individuals for insertion
@@ -53,6 +79,10 @@ module.exports =
                 .stopOnError(handleError)
                 // For each batch, convert it to a promise that represents the record insertion
                 .each((individualBatch) => {
+
+                  // Record the individuals as they pass by to finaly generate the schema
+                  recordIndividualsForSchema(individualBatch);
+
                   // Wrapping the task in a promise so that it can be immediately
                   // run. Same reason as above.
                   batchPromises.push(task2Promise(trx.data.create(catalog, individualBatch))
@@ -67,6 +97,12 @@ module.exports =
                           catalog,
                           dataSet.entityType,
                           q.build.equals('id', dataSetId));
+
+                        // Simplify Schema
+                        const schema = thread(
+                          schemaMap,
+                          R.values,
+                          R.map(R.evolve({attributes: R.values})));
 
                         datasetQueryTask
                           .chain(ds => {
@@ -88,4 +124,5 @@ module.exports =
                 });
             });
       });
+    };
   };

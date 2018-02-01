@@ -23,21 +23,32 @@ File Import Process and Specs
         i. Each column header, and whether it matched an existing variable (global or local). Also includes the detected variable type.
         ii. The set of attributes for categorical variables, and whether or not they matched existing variables by name.
 
-### Summary Format
+## Data Set Column Mapping
+
+When importing a data set, you must pass in a column mapping object to map the column header strings to variable Ids.
+
+Expected Column Mapping Format:
+
+    {
+      'Header Name': _variableId_
+      ...
+    }
 
 ## Data Set "Schema"
 
-Each data set must have a "Schema" configured before importing data. The schema is
-what configures which variables/attributes are represented in the data set. In
-order for the importer to understand how to import each row in the CSV file, the
-schema must be first set on the indicator item.
+The importer will automatically determine the "Schema" of a data set and save it to the data set
+entity upon successful import. The schema captures which variables/attributes are 
+represented in the data set. Variables are mapped to columns using the "Data Set Column Mapping",
+while attributes are automatically mapped using the attribute's 'key' property. If there are no 
+attribute matches found in the system, an error will be thrown.
 
-Expected Schema Format:
+Schema Format:
 
     [
         {
             variable: _variable_id_,
-            attributes: [             // If Categorical
+            // If Categorical
+            attributes: [
                 _attribute_id_,
                 ...
             ]
@@ -51,13 +62,14 @@ Expected Schema Format:
 ### Expectations
 
 * The target data set ID will be provided
-* Schema must be pre-configured on the target data set
+* The column mapping will be provided
+* All variables and attributes are pre-created in the system (if matches aren't found, an error is thrown)
 
 ### Import steps
 
 1. Ingest all data rows into facts table
-    a. Match column headers to variables in the schema
-    b. Match attributes names to attributes in the schema
+    a. Map column headers to variables using the mapping provided
+    b. Match attributes keys to attributes in the system for the column's variable
     c. All a single transaction
     d. Should be batched for better performance 
     e. Will roll back transaction if any rows fail
@@ -105,20 +117,9 @@ Summary format
 
 ### Importer
 
-* Import(dataSetId, mappings, dataStream)
+* Import(dataSetId, mappings, filePath [, batchSize])
     * Returns results
 
 Results format
 
-    {
-        status: 'Success' | 'Failure',
-        dataSet: _data_set_id,
-        rowsImported: _num_imported_,
-        failures: [
-            {
-                row: _row_num_,
-                error: _error_message_
-            },
-            ...
-        ]
-    }
+  TBD (Job)

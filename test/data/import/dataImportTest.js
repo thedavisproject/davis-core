@@ -41,6 +41,7 @@ describe('Data Import', function(){
         update: sinon.stub()
       }
     };
+
     const storageStub = {
       transact: sinon.stub().callsFake(fn =>
         new Task((reject, resolve) => {
@@ -133,7 +134,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, [], 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', 1));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
@@ -158,13 +159,8 @@ describe('Data Import', function(){
     trxStorage.entities.update
       .returns(Task.of([testSet]));
 
-    const dataToImport = [
-      individual.new(1, 1, [
-        fact.newCategorical(9, 12),
-        fact.newNumerical(10, 56),
-        fact.newText(11, 'Foo')
-      ])
-    ];
+    // Import no rows, jsut testing the data updated date
+    const dataToImport = [ ];
 
     // Empty stream with one object
     parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
@@ -187,11 +183,11 @@ describe('Data Import', function(){
       R.assoc('schema', []),
       dataSet.setDataModified(testDataModifiedDate));
 
-    const results = task2Promise(importer(2, [], 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', 1));
 
     // Assert
     return when.all([
-      expect(results).to.eventually.equal(1), // number of rows inserted
+      expect(results).to.eventually.equal(0), // number of rows inserted
       results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2)),
       results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
       results.then(() => expect(trxStorage.entities.update).to.have.been.calledWith('cat', [expectedUpdateItem])),
@@ -213,6 +209,11 @@ describe('Data Import', function(){
       { variable: 10 },
       { variable: 11 }
     ];
+
+    const columnMappings = {
+      'foo': 5,
+      'bar': 6
+    };
 
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
@@ -249,12 +250,12 @@ describe('Data Import', function(){
       R.assoc('schema', schema),
       dataSet.setDataModified(testDataModifiedDate));
 
-    const results = task2Promise(importer(2, schema, 'filepath', 1));
+    const results = task2Promise(importer(2, columnMappings, 'filepath', 1));
 
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
-      results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2, schema)),
+      results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2, columnMappings)),
       results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
       results.then(() => expect(trxStorage.entities.update).to.have.been.calledWith('cat', [expectedUpdateItem])),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
@@ -293,7 +294,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filename', 1));
+    const results = task2Promise(importer(2, {}, 'filename', 1));
 
     // Assert
     return when.all([
@@ -334,7 +335,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -377,7 +378,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -424,7 +425,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', 1));
 
     // Assert
     return when.all([
@@ -475,7 +476,7 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, 'filepath', 1000));
+    const results = task2Promise(importer(2, {}, 'filepath', 1000));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(2), // number of rows inserted

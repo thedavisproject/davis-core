@@ -13,10 +13,10 @@ module.exports = ({
   return {
     jobType,
 
-    queue: (dataSet, schema, filePath, queue) => thread(
+    queue: (dataSet, columnMappings, filePath, queue) => thread(
       queue.add(jobType, {
         dataSet,
-        schema,
+        columnMappings,
         filePath
       }),
       Async.fromPromise),
@@ -24,11 +24,12 @@ module.exports = ({
     // Expected job data structure
     // {
     //   dataSet: Int!,
+    //   columnMappings: Object!,
     //   filePath: String!
     // }
     processor: function(job){
-      const { dataSet, schema, filePath } = job.data;
-      return task2Promise(dataImport(dataSet, schema, filePath));
+      const { dataSet, columnMappings, filePath } = job.data;
+      return task2Promise(dataImport(dataSet, columnMappings, filePath));
     }
   };
 };
