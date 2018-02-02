@@ -74,7 +74,7 @@ describe('Analyze', function(){
       {'Location': 'NY', 'Year': '2012', 'Percent': '.7'}
     ]);
 
-    const results = task2Promise(analyze(56, dataStream, 'Year'));
+    const results = task2Promise(analyze(56, dataStream, {column: 'Year'}));
 
     return when.all([
       expect(results.then(r => r[0])).to.eventually.contain({
@@ -85,7 +85,7 @@ describe('Analyze', function(){
     ]);
   });
 
-  it('should ?', function(){
+  it('should throw error when column is specified, but column doesnt exist', function(){
 
     const entityRepository = entityRepoStub(testEntities);
     const analyze = analyzeFac({entityRepository});
@@ -95,7 +95,7 @@ describe('Analyze', function(){
       {'Location': 'NY', 'Year': '2012', 'Percent': '.7'}
     ]);
 
-    const results = task2Promise(analyze(56, dataStream, 'Foo'));
+    const results = task2Promise(analyze(56, dataStream, {column: 'Foo'}));
 
     return expect(results).to.be.rejectedWith('Data file does not contain column Foo');
   });
@@ -165,19 +165,94 @@ describe('Analyze', function(){
       {'Location': 'MA'},
       {'Location': 'NY'}
     ]);
-    const results = task2Promise(analyze(56, dataStream));
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
 
     return when.all([
-      expect(results.then(r => r[0].attributes[0])).to.eventually.contain({
-        key: 'MA',
+      expect(results.then(r => r[0].values[0])).to.eventually.contain({
+        value: 'MA',
         match: true,
         attribute: 23
       }),
-      expect(results.then(r => r[0].attributes[1])).to.eventually.contain({
-        key: 'NY',
+      expect(results.then(r => r[0].values[1])).to.eventually.contain({
+        value: 'NY',
         match: true,
         attribute: 24
       })
+    ]);
+  });
+
+  it('should include sample values for non-categorical variables', function(){
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'Name': 'Foo'},
+      {'Name': 'Bar'}
+    ]);
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
+
+    return when.all([
+      expect(results.then(r => r[0].values[0])).to.eventually.contain({
+        value: 'Foo'
+      }),
+      expect(results.then(r => r[0].values[1])).to.eventually.contain({
+        value: 'Bar'
+      })
+    ]);
+  });
+
+  it('should include sample values for unknown variables', function(){
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'UNKNOWN': 'Foo'},
+      {'UNKNOWN': 'Bar'}
+    ]);
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
+
+    return when.all([
+      expect(results.then(r => r[0].values[0])).to.eventually.contain({
+        value: 'Foo'
+      }),
+      expect(results.then(r => r[0].values[1])).to.eventually.contain({
+        value: 'Bar'
+      })
+    ]);
+  });
+
+  it('should limit values', function(){
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'UNKNOWN': 'Foo'},
+      {'UNKNOWN': 'Bar'},
+      {'UNKNOWN': 'Baz'}
+    ]);
+    const results = task2Promise(analyze(56, dataStream, {limit: 1}));
+
+    return when.all([
+      expect(results.then(r => r[0].values.length)).to.eventually.equal(1),
+      expect(results.then(r => r[0].values[0])).to.eventually.contain({
+        value: 'Foo'
+      })
+    ]);
+  });
+
+  it('should default to limit of 0', function(){
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'UNKNOWN': 'Foo'},
+      {'UNKNOWN': 'Bar'},
+      {'UNKNOWN': 'Baz'}
+    ]);
+    const results = task2Promise(analyze(56, dataStream));
+
+    return when.all([
+      expect(results.then(r => r[0].values.length)).to.eventually.equal(0)
     ]);
   });
 
@@ -190,12 +265,12 @@ describe('Analyze', function(){
       {'Location': 'NY'},
       {'Location': 'VT'}
     ]);
-    const results = task2Promise(analyze(56, dataStream));
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
 
     return when.all([
-      expect(results.then(r => r[0].attributes[0].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes[1].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes[2].match)).to.eventually.be.false
+      expect(results.then(r => r[0].values[0].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].values[1].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].values[2].match)).to.eventually.be.false
     ]);
   });
 
@@ -208,8 +283,8 @@ describe('Analyze', function(){
       {'Location': ''},
       {'Location': 'VT'}
     ]);
-    const results = task2Promise(analyze(56, dataStream));
-    return expect(results.then(r => r[0].attributes)).to.eventually.have.length(2);
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
+    return expect(results.then(r => r[0].values)).to.eventually.have.length(2);
   });
 
   it('should exclude attributes for numerical and text variables', function(){
@@ -254,11 +329,11 @@ describe('Analyze', function(){
       {'loc': 'MA-Key', 'Percent': '.5'},
       {'loc': 'NY-Key', 'Percent': '.7'}
     ]);
-    const results = task2Promise(analyze(56, dataStream));
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
 
     return when.all([
-      expect(results.then(r => r[0].attributes[0].match)).to.eventually.be.true,
-      expect(results.then(r => r[0].attributes[1].match)).to.eventually.be.true
+      expect(results.then(r => r[0].values[0].match)).to.eventually.be.true,
+      expect(results.then(r => r[0].values[1].match)).to.eventually.be.true
     ]);
   });
 
@@ -269,15 +344,15 @@ describe('Analyze', function(){
     const dataStream = StreamTest['v2'].fromObjects([
       {'Year': '2012', 'Year-Dupe': '2012'}
     ]);
-    const results = task2Promise(analyze(56, dataStream));
+    const results = task2Promise(analyze(56, dataStream, {limit: 100}));
 
     return when.all([
       expect(results.then(r => r[0])).to.eventually.contain({
         match: true,
         variable: 67
       }),
-      expect(results.then(r => r[0].attributes[0])).to.eventually.contain({
-        key: '2012',
+      expect(results.then(r => r[0].values[0])).to.eventually.contain({
+        value: '2012',
         match: true,
         attribute: 56
       }),
@@ -285,8 +360,8 @@ describe('Analyze', function(){
         match: true,
         variable: 68
       }),
-      expect(results.then(r => r[1].attributes[0])).to.eventually.contain({
-        key: '2012',
+      expect(results.then(r => r[1].values[0])).to.eventually.contain({
+        value: '2012',
         match: true,
         attribute: 57
       })

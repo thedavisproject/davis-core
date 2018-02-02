@@ -21,7 +21,10 @@ module.exports =
       return firstScoped || R.find(v => v.key === key, variables);
     });
 
-    return (dataSetId, dataStream, column = null) => {
+    return (dataSetId, dataStream, {
+      limit = 0,
+      column = null
+    } = {}) => {
 
       var columns;
 
@@ -29,14 +32,16 @@ module.exports =
           R.indexBy(R.identity),
           R.map(key => ({
             key: key,
-            attributes: new Set()
+            values: new Set()
           })));
 
       function processColumn(key, value){
         if(isNilOrEmpty(value)){
           return;
         }
-        columns[key].attributes.add(value);
+        if(columns[key].values.size() < limit){
+          columns[key].values.add(value);
+        }
       }
 
       const processData = R.curry((rejectHandler, d) => {
@@ -85,39 +90,44 @@ module.exports =
         column){
 
         const v = existingVariables[column.key];
-        if(!v){
-          return {
-            key: column.key,
-            match: false
-          };
-        }
 
-        var vOut = {
+        var vOut = v ? {
           key: column.key,
           match: true,
           variable: v.id
+        } : {
+          key: column.key,
+          match: false
         };
 
-        if(v.type === variable.types.categorical){
+        if(v && v.type === variable.types.categorical){
 
           var variableAttributes = existingAttributes[v.id] ?
             existingAttributes[v.id] : {};
 
-          vOut.attributes = column.attributes.toArray()
+          vOut.values = column.values.toArray()
             .map(a => {
               const attr = variableAttributes[a];
 
               if(attr){
                 return {
-                  key: a,
+                  value: a,
                   match: true,
                   attribute: attr.id
                 };
               }
 
               return {
-                key: a,
+                value: a,
                 match: false
+              };
+            });
+        }
+        else {
+          vOut.values = column.values.toArray()
+            .map(a => {
+              return {
+                value: a
               };
             });
         }
@@ -136,7 +146,7 @@ module.exports =
             R.filter(c => vars[c.key] && vars[c.key].type === variable.types.categorical),
             R.map(c => ({
               variable: vars[c.key],
-              attributeKeys: c.attributes.toArray()
+              attributeKeys: c.values.toArray()
             })),
             tryToLocateAttributes));
 

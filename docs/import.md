@@ -103,9 +103,10 @@ Summary format
             key: _column_header_,
             match: true | false,
             variable: _variable_id_,
-            attributes: [                      // Only if categorical
+            values: [
                 {
-                    key: _attribute_name_,
+                    value: _attribute_name_,
+                    // Only For Categorical
                     match: true | false,
                     attribute: _attribute_id_
                 },
