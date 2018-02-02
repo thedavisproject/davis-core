@@ -120,7 +120,8 @@ const buildEntityRepositoryStub = entities => {
   return {
     queryAll,
     queryById,
-    query
+    query,
+    create: sinon.stub()
   };
 };
 

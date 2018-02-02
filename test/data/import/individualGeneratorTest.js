@@ -1,6 +1,13 @@
 const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+const sinonChai = require('sinon-chai');
+
+chai.use(sinonChai);
+chai.use(chaiAsPromised);
 
 const {expect, assert} = chai;
+
+const Task = require('data.task');
 
 const StreamTest = require('streamtest');
 const { variable, attribute } = require('davis-model');
@@ -197,6 +204,56 @@ describe('Import process', function() {
       }));
 
     streamTask
+      .fork(error => {
+        done(new Error(error));
+      },
+      results => {
+        results.pipe(outStream);
+      });
+  });
+
+  it('should create attributes if flag is set', function(done) {
+
+    const columnMappings = {
+      'Location': 72
+    };
+
+    const entityRepository = entityRepoStub(commonTestEntities);
+    const {rawToIndividuals} = individualGeneratorFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([{
+      Location: 'UNKNOWN1'
+    }, {
+      Location: 'UNKNOWN2'
+    }]);
+
+    entityRepository.create.onFirstCall().returns(Task.of([attribute.new(350,'UNKNOWN1', 72)]));
+    entityRepository.create.onSecondCall().returns(Task.of([attribute.new(351,'UNKNOWN2', 72)]));
+
+    const outStream = StreamTest['v2'].toObjects(
+      function(error, results) {
+        expect(entityRepository.create).to.have.been.calledWith([attribute.new(null, 'UNKNOWN1', 72)]);
+        expect(entityRepository.create).to.have.been.calledWith([attribute.new(null, 'UNKNOWN2', 72)]);
+        expect(error).to.be.null;
+        expect(results).to.have.length(2);
+
+        expect(results[0].facts[0]).to.deep.equal({
+          variable: 72,
+          type: variable.types.categorical,
+          attribute: 350
+        });
+
+        expect(results[1].facts[0]).to.deep.equal({
+          variable: 72,
+          type: variable.types.categorical,
+          attribute: 351
+        });
+        done();
+      });
+
+    rawToIndividuals(56, columnMappings, {
+      createMissingAttributes: true
+    }).map(s => dataStream.pipe(s))
       .fork(error => {
         done(new Error(error));
       },
