@@ -8,7 +8,7 @@ const { variable, attribute } = model;
 const Task = require('data.task');
 const Set = require('Set');
 
-module.exports = 
+module.exports =
   ({
     entityRepository
   }) =>
@@ -21,7 +21,7 @@ module.exports =
       return firstScoped || R.find(v => v.key === key, variables);
     });
 
-    return R.curry((dataSetId, dataStream) => {
+    return (dataSetId, dataStream, column = null) => {
 
       var columns;
 
@@ -39,14 +39,28 @@ module.exports =
         columns[key].attributes.add(value);
       }
 
-      function processData(d){
+      const processData = R.curry((rejectHandler, d) => {
 
-        if(!columns){
-          columns = initColumns(R.keys(d));
+        // For single column analyze
+        if(column){
+          if(!R.contains(column, R.keys(d))){
+            rejectHandler(new Error(`Data file does not contain column ${column}`));
+          }
+          if(!columns){
+            columns = initColumns([column]);
+          }
+
+          processColumn(column, d[column]);
         }
+        // For full analyze
+        else {
+          if(!columns){
+            columns = initColumns(R.keys(d));
+          }
 
-        R.keys(d).forEach(k => processColumn(k, d[k]));
-      }
+          R.keys(d).forEach(k => processColumn(k, d[k]));
+        }
+      });
 
       const tryToLocateVariables = keys => thread(
         entityRepository.query(variable.entityType, q.in('key', keys)),
@@ -134,17 +148,19 @@ module.exports =
 
       const parseAllData = new Task(function(reject, resolve){
         dataStream
-          .on('data', processData)
+          .on('data', processData(reject))
           .on('error', reject)
           .on('end', function(){
             resolve(columns);
           });
       });
 
-      return parseAllData
-        .chain(columns =>
+      return thread(
+        parseAllData,
+        R.chain(columns =>
           matchVariablesAndAttributes(columns)
             .map(([vars, attrs]) =>
-              R.values(columns).map(c => buildVariableMatch(vars, attrs, c))));
-    });
+              R.values(columns).map(c =>
+                buildVariableMatch(vars, attrs, c)))));
+    };
   };

@@ -64,6 +64,42 @@ describe('Analyze', function(){
     ]);
   });
 
+  it('should match variable for single column', function(){
+
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'Location': 'MA', 'Year': '2012', 'Percent': '.5'},
+      {'Location': 'NY', 'Year': '2012', 'Percent': '.7'}
+    ]);
+
+    const results = task2Promise(analyze(56, dataStream, 'Year'));
+
+    return when.all([
+      expect(results.then(r => r[0])).to.eventually.contain({
+        key:      'Year',
+        match:    true,
+        variable: 67
+      })
+    ]);
+  });
+
+  it('should ?', function(){
+
+    const entityRepository = entityRepoStub(testEntities);
+    const analyze = analyzeFac({entityRepository});
+
+    const dataStream = StreamTest['v2'].fromObjects([
+      {'Location': 'MA', 'Year': '2012', 'Percent': '.5'},
+      {'Location': 'NY', 'Year': '2012', 'Percent': '.7'}
+    ]);
+
+    const results = task2Promise(analyze(56, dataStream, 'Foo'));
+
+    return expect(results).to.be.rejectedWith('Data file does not contain column Foo');
+  });
+
   it('should not match missing categorical variable', function(){
     const entityRepository = entityRepoStub(testEntities);
     const analyze = analyzeFac({entityRepository});
