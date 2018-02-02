@@ -134,7 +134,10 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
+
     // Assert
     return when.all([
       expect(results).to.eventually.equal(1), // number of rows inserted
@@ -183,7 +186,9 @@ describe('Data Import', function(){
       R.assoc('schema', []),
       dataSet.setDataModified(testDataModifiedDate));
 
-    const results = task2Promise(importer(2, {}, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -250,7 +255,9 @@ describe('Data Import', function(){
       R.assoc('schema', schema),
       dataSet.setDataModified(testDataModifiedDate));
 
-    const results = task2Promise(importer(2, columnMappings, 'filepath', 1));
+    const results = task2Promise(importer(2, columnMappings, 'filepath', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -294,7 +301,9 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filename', 1));
+    const results = task2Promise(importer(2, {}, 'filename', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -335,7 +344,9 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -378,7 +389,9 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -425,7 +438,9 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filepath', 1));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
 
     // Assert
     return when.all([
@@ -476,7 +491,9 @@ describe('Data Import', function(){
     });
 
     // Act
-    const results = task2Promise(importer(2, {}, 'filepath', 1000));
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1000
+    }));
     // Assert
     return when.all([
       expect(results).to.eventually.equal(2), // number of rows inserted

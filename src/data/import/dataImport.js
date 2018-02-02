@@ -18,7 +18,10 @@ module.exports =
     parseDataFile
   }) =>
   {
-    return (dataSetId, columnMapping, filePath, batchSize = DEFAULT_BATCH_SIZE) => {
+    return (dataSetId, columnMapping, filePath, {
+      batchSize = DEFAULT_BATCH_SIZE,
+      createMissingAttributes = false
+    } = {}) => {
 
       // Wrap everything in a transaction
       return storage.transact((trx, commit, rollback) => {
@@ -37,7 +40,9 @@ module.exports =
 
         thread(
           // Create an individual processor for this data set
-          rawToIndividuals(dataSetId, columnMapping),
+          rawToIndividuals(dataSetId, columnMapping, {
+            createMissingAttributes
+          }),
           R.map(toIndividuals =>
             // Parse the file to raw individual objects and convert to real individuals
             parseDataFile(filePath).pipe(toIndividuals)))
