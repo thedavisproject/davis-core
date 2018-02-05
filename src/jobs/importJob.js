@@ -13,11 +13,12 @@ module.exports = ({
   return {
     jobType,
 
-    queue: (dataSet, columnMappings, filePath, queue) => thread(
+    queue: ({dataSet, columnMappings, filePath, createMissingAttributes = false}, queue) => thread(
       queue.add(jobType, {
         dataSet,
         columnMappings,
-        filePath
+        filePath,
+        createMissingAttributes
       }),
       Async.fromPromise),
 
@@ -26,10 +27,13 @@ module.exports = ({
     //   dataSet: Int!,
     //   columnMappings: Object!,
     //   filePath: String!
+    //   createMissingAttributes: Bool!
     // }
     processor: function(job){
-      const { dataSet, columnMappings, filePath } = job.data;
-      return task2Promise(dataImport(dataSet, columnMappings, filePath));
+      const { dataSet, columnMappings, filePath, createMissingAttributes = false } = job.data;
+      return task2Promise(dataImport(dataSet, columnMappings, filePath, {
+        createMissingAttributes
+      }));
     }
   };
 };

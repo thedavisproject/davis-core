@@ -13,7 +13,7 @@ module.exports = ({
   return {
     jobType,
 
-    queue: (target, queue) => thread(
+    queue: ({target}, queue) => thread(
       queue.add(jobType, {
         target
       }),
