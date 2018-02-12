@@ -1,8 +1,6 @@
 const { thread } = require('davis-shared').fp;
 const Task = require('data.task');
 const Async = require('control.async')(Task);
-const when = require('when');
-const task2Promise = Async.toPromise(when.promise);
 
 const jobType = 'IMPORT';
 
@@ -13,7 +11,12 @@ module.exports = ({
   return {
     jobType,
 
-    queue: ({dataSet, columnMappings, filePath, createMissingAttributes = false}, queue) => thread(
+    queue: ({
+      dataSet,
+      columnMappings,
+      filePath,
+      createMissingAttributes = false
+    }, queue) => thread(
       queue.add(jobType, {
         dataSet,
         columnMappings,
@@ -29,11 +32,14 @@ module.exports = ({
     //   filePath: String!
     //   createMissingAttributes: Bool!
     // }
-    processor: function(job){
+    processor: function(job, done){
       const { dataSet, columnMappings, filePath, createMissingAttributes = false } = job.data;
-      return task2Promise(dataImport(dataSet, columnMappings, filePath, {
+
+      dataImport(dataSet, columnMappings, filePath, {
         createMissingAttributes
-      }));
+      }).fork(
+        error => error instanceof Error ? done(error) : done(new Error(error)),
+        success => done(null, success));
     }
   };
 };

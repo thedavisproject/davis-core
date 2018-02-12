@@ -1,8 +1,6 @@
 const { thread } = require('davis-shared').fp;
 const Task = require('data.task');
 const Async = require('control.async')(Task);
-const when = require('when');
-const task2Promise = Async.toPromise(when.promise);
 
 const jobType = 'PUBLISH';
 
@@ -23,9 +21,11 @@ module.exports = ({
     // {
     //   target: String!
     // }
-    processor: function(job){
+    processor: function(job, done){
       const { target } = job.data;
-      return task2Promise(publish(target));
+      publish(target).fork(
+        error => error instanceof Error ? done(error) : done(new Error(error)),
+        success => done(null, success));
     }
   };
 };
