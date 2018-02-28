@@ -6,6 +6,7 @@ const shared = require('davis-shared');
 const {crypto, fp} = shared;
 const {either2Task, thread} = fp;
 const Task = require('data.task');
+const Either = require('data.either');
 
 module.exports = ({
   storage,
@@ -38,7 +39,10 @@ module.exports = ({
     R.chain(getUser));
 
   const userByToken = R.pipe(
-    decode,
+    token => R.isNil(token) ?
+      Either.Left('No Token'):
+      Either.Right(token),
+    R.chain(decode),
     either2Task,
     R.chain(({userId}) => userById(userId)));
 
@@ -52,9 +56,9 @@ module.exports = ({
   const login = (email, password) =>
     // Query for the user by email
     userByEmail(email)
-  // Check the password
+      // Check the password
       .chain(validatePassword(password))
-  // Generate an auth token for this user
+      // Generate an auth token for this user
       .map(generateToken);
 
   return {
