@@ -1,23 +1,20 @@
 const { thread } = require('davis-shared').fp;
 const Task = require('data.task');
 const Async = require('control.async')(Task);
-
-const jobType = 'IMPORT';
+const jobTypes = require('./jobTypes');
 
 module.exports = ({
   dataImport
 }) => {
 
   return {
-    jobType,
-
     queue: ({
       dataSet,
       columnMappings,
       filePath,
       createMissingAttributes = false
     }, queue) => thread(
-      queue.add(jobType, {
+      queue.add(jobTypes.import, {
         dataSet,
         columnMappings,
         filePath,

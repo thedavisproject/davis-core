@@ -1,4 +1,7 @@
 module.exports = {
+  auth: {
+    user: require('./src/auth/user')
+  },
   data: {
     export: {
       csvExport: require('./src/data/export/csvExport')
@@ -25,6 +28,7 @@ module.exports = {
     }
   },
   jobs: {
+    jobTypes: require('./src/jobs/jobTypes.js'),
     importJob: require('./src/jobs/importJob.js'),
     publishJob: require('./src/jobs/publishJob.js')
   },
