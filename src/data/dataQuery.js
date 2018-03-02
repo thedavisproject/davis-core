@@ -22,7 +22,7 @@ module.exports =
         })));
     });
 
-    return (filters, dataSetIds) => thread(
-      storage.data.query(catalog, filters, dataSetIds),
+    return (filters, dataSetIds, limit) => thread(
+      storage.data.query(catalog, filters, dataSetIds, limit),
       R.map(buildResults(toArray(dataSetIds))));
   };

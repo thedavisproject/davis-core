@@ -60,6 +60,19 @@ describe('Data Query', function(){
     ]);
   });
 
+  it('should pass along the limit', function(){
+    const {queryStub, query} = stubbIt();
+
+    const results = [];
+    queryStub.returns(Task.of(results));
+
+    const resultIgnored = task2Promise(query([], [], 2));
+
+    return when.all([
+      expect(queryStub).to.have.been.calledWith('cat', [], [], 2)
+    ]);
+  });
+
   it('should exclude data sets that have no data', function(){
     const {queryStub, query} = stubbIt();
 
