@@ -8,8 +8,12 @@ module.exports = ({
 }) => {
 
   return {
-    queue: ({target}, queue) => thread(
+    queue: ({
+      userId,
+      target
+    }, queue) => thread(
       queue.add(jobTypes.publish, {
+        userId,
         target
       }),
       Async.fromPromise),

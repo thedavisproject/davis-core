@@ -9,12 +9,14 @@ module.exports = ({
 
   return {
     queue: ({
+      userId,
       dataSet,
       columnMappings,
       filePath,
       createMissingAttributes = false
     }, queue) => thread(
       queue.add(jobTypes.import, {
+        userId,
         dataSet,
         columnMappings,
         filePath,

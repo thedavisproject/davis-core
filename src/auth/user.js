@@ -62,6 +62,7 @@ module.exports = ({
       .map(generateToken);
 
   return {
+    userById,
     userByToken,
     login
   };
