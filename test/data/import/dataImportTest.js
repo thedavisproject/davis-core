@@ -34,7 +34,8 @@ describe('Data Import', function(){
     const trxRollBack = sinon.stub();
     const trxStorage = {
       data: {
-        create: sinon.stub()
+        create: sinon.stub(),
+        delete: sinon.stub()
       },
       entities: {
         query: sinon.stub(),
@@ -103,6 +104,7 @@ describe('Data Import', function(){
 
     const testSet = dataSet.new(2, 'Test Set');
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.of([testSet]));
@@ -156,6 +158,7 @@ describe('Data Import', function(){
 
     const testSet = dataSet.new(2, 'Test Set');
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.of([testSet]));
@@ -220,6 +223,7 @@ describe('Data Import', function(){
       'bar': 6
     };
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.of([testSet]));
@@ -276,6 +280,7 @@ describe('Data Import', function(){
     // Arrange
     const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
 
     const dataToImport = [
@@ -314,11 +319,55 @@ describe('Data Import', function(){
 
   });
 
+  it('should roll back transaction on data delete error', function(){
+
+    // Arrange
+    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+
+    trxStorage.data.delete.returns(Task.rejected('Data delete error'));
+
+    const dataToImport = [
+      individual.new(1, 1, [
+        fact.newCategorical(9, 12),
+        fact.newNumerical(10, 56)
+      ])
+    ];
+
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
+
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub
+    });
+
+    // Act
+    const results = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1
+    }));
+
+    // Assert
+    return when.all([
+      expect(results).to.be.rejectedWith(/Data delete error/),
+      results.catch(() => expect(trxRollBack).to.have.been.called),
+      results.catch(() => expect(trxCommit).to.not.have.been.called)
+    ]);
+
+  });
+
   it('should roll back transaction on data insert error', function(){
 
     // Arrange
     const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.rejected('Data write error'));
 
     const dataToImport = [
@@ -362,6 +411,7 @@ describe('Data Import', function(){
     // Arrange
     const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.rejected('Entity read error'));
@@ -409,6 +459,7 @@ describe('Data Import', function(){
 
     const testSet = dataSet.new(2, 'Test Set');
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
     trxStorage.entities.query
       .returns(Task.of([testSet]));
@@ -458,6 +509,7 @@ describe('Data Import', function(){
 
     const testSet = dataSet.new(2, 'Test Set');
 
+    trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(2));
     trxStorage.entities.query
       .returns(Task.of([testSet]));

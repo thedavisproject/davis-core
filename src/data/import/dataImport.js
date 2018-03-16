@@ -39,10 +39,12 @@ module.exports =
         const batchPromises = [];
 
         thread(
+          // First delete the data for this data set
+          trx.data.delete(catalog, {dataSet: dataSetId}),
           // Create an individual processor for this data set
-          rawToIndividuals(dataSetId, columnMapping, {
+          R.chain(() => rawToIndividuals(dataSetId, columnMapping, {
             createMissingAttributes
-          }),
+          })),
           R.map(toIndividuals =>
             // Parse the file to raw individual objects and convert to real individuals
             parseDataFile(filePath).pipe(toIndividuals)))
@@ -62,7 +64,7 @@ module.exports =
                     if(!schemaMap[f.variable]){
                       schemaMap[f.variable] = {
                         variable: f.variable
-                      }; 
+                      };
                     }
 
                     if(f.type === variable.types.categorical){
