@@ -51,18 +51,22 @@ describe('Publish', function(){
       transact: transactStub
     };
 
+    const config = { core: sinon.stub() };
+
     const publish = publishFac({
       entityRepository: { transact: () => entityRepoStub },
       storage,
       catalog: 'source-cat',
-      user: {id: 40}
+      user: {id: 40},
+      config
     });
 
     return {
       storage,
       storagePublishStub,
       entityRepoStub,
-      publish
+      publish,
+      config
     };
   };
 
@@ -220,6 +224,30 @@ describe('Publish', function(){
       expect(entityRepoStub.create).to.have.been.calledWith(
         action.fullPublishEntry(40)),
       expect(results).to.eventually.be.true
+    ]);
+  });
+
+  it('should use the config timeout', function(){
+
+    const { storage, storagePublishStub, entityRepoStub, publish, config } = stubbIt();
+
+    entityRepoStub.query.withArgs(action.entityType)
+      .returns(Task.of([])); // No action logs
+
+    entityRepoStub.query.withArgs(dataSet.entityType)
+      .returns(Task.of([]));
+
+    config.core['publish-timeout'] = 50;
+
+    entityRepoStub.create.returns(Task.of([]));
+
+    storagePublishStub.publishEntities.returns(Task.of(true));
+    storagePublishStub.publishFacts.returns(Task.of(true));
+
+    const resultsIgnored = task2Promise(publish('target-cat'));
+
+    return when.all([
+      expect(storage.transact).to.have.been.calledWith(sinon.match.any, 50)
     ]);
   });
 

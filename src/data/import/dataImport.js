@@ -15,7 +15,8 @@ module.exports =
     catalog,
     timeStamp,
     individualGenerator: { rawToIndividuals },
-    parseDataFile
+    parseDataFile,
+    config
   }) =>
   {
     return (dataSetId, columnMapping, filePath, {
@@ -130,6 +131,6 @@ module.exports =
                     }).catch(handleError);
                 });
             });
-      });
+      }, config.core['import-timeout']);
     };
   };

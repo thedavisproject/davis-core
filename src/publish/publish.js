@@ -12,7 +12,8 @@ module.exports =
     entityRepository,
     storage,
     catalog,
-    user
+    user,
+    config
   }) =>
   {
 
@@ -67,6 +68,6 @@ module.exports =
             // Return true
             R.map(R.T));
         });
-      });
+      }, config.core['publish-timeout']);
     };
   };

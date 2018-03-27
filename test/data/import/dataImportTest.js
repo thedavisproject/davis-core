@@ -63,7 +63,8 @@ describe('Data Import', function(){
       trxRollBack,
       trxCommit,
       storageStub,
-      parseDataFileStub
+      parseDataFileStub,
+      config: { core: sinon.stub() }
     };
   };
 
@@ -100,7 +101,13 @@ describe('Data Import', function(){
   it('should write a single individual', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config} = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -132,7 +139,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -145,6 +153,7 @@ describe('Data Import', function(){
       expect(results).to.eventually.equal(1), // number of rows inserted
       results.then(() => expect(individualGeneratorStub.rawToIndividuals).to.have.been.calledWith(2)),
       results.then(() => expect(parseDataFileStub).to.have.been.calledWith('filepath')),
+      results.then(() => expect(trxStorage.data.delete).to.have.been.calledWith('cat', {dataSet: 2})),
       results.then(() => expect(trxStorage.data.create).to.have.been.calledWith('cat', dataToImport)),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
       results.then(() => expect(trxCommit).to.have.been.called)
@@ -154,7 +163,13 @@ describe('Data Import', function(){
   it('should update the data modified date', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config} = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -180,7 +195,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -208,7 +224,13 @@ describe('Data Import', function(){
   it('should set the dataset schema', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config} = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -250,7 +272,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -278,7 +301,13 @@ describe('Data Import', function(){
   it('should roll back transaction on stream error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+    config} = stubStorage();
 
     trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
@@ -302,7 +331,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -322,7 +352,13 @@ describe('Data Import', function(){
   it('should roll back transaction on data delete error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config } = stubStorage();
 
     trxStorage.data.delete.returns(Task.rejected('Data delete error'));
 
@@ -345,7 +381,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -365,7 +402,13 @@ describe('Data Import', function(){
   it('should roll back transaction on data insert error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config} = stubStorage();
 
     trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.rejected('Data write error'));
@@ -389,7 +432,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -409,7 +453,13 @@ describe('Data Import', function(){
   it('should roll back transaction on entity read error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config } = stubStorage();
 
     trxStorage.data.delete.returns(Task.of(true));
     trxStorage.data.create.returns(Task.of(1));
@@ -435,7 +485,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -455,7 +506,13 @@ describe('Data Import', function(){
   it('should roll back transaction on entity update error', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -485,7 +542,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -505,7 +563,13 @@ describe('Data Import', function(){
   it('should write records when fewer than the batch size are created', function(){
 
     // Arrange
-    const {trxRollBack, trxCommit, trxStorage, storageStub, parseDataFileStub } = stubStorage();
+    const {
+      trxRollBack,
+      trxCommit,
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config } = stubStorage();
 
     const testSet = dataSet.new(2, 'Test Set');
 
@@ -539,7 +603,8 @@ describe('Data Import', function(){
       storage: storageStub,
       catalog: 'cat',
       individualGenerator: individualGeneratorStub,
-      parseDataFile: parseDataFileStub
+      parseDataFile: parseDataFileStub,
+      config
     });
 
     // Act
@@ -552,6 +617,53 @@ describe('Data Import', function(){
       results.then(() => expect(trxStorage.data.create).to.have.been.calledWith('cat', dataToImport)),
       results.then(() => expect(trxRollBack).to.not.have.been.called),
       results.then(() => expect(trxCommit).to.have.been.called)
+    ]);
+  });
+
+  it('should use the config timeout', function(){
+
+    // Arrange
+    const {
+      trxStorage,
+      storageStub,
+      parseDataFileStub,
+      config } = stubStorage();
+
+    trxStorage.data.delete.returns(Task.of(true));
+    trxStorage.data.create.returns(Task.of(2));
+    trxStorage.entities.query
+      .returns(Task.of([]));
+    trxStorage.entities.update
+      .returns(Task.of([]));
+
+    const dataToImport = [];
+
+    // Empty stream with one object
+    parseDataFileStub.returns(StreamTest['v2'].fromObjects(dataToImport.map(() => ({}))));
+
+    const individualGeneratorStub = stubIndividualGenerator(dataToImport);
+
+    const importer = importFac({
+      timeStamp: {
+        now: sinon.stub().returns(testDataModifiedDate)
+      },
+      storage: storageStub,
+      catalog: 'cat',
+      individualGenerator: individualGeneratorStub,
+      parseDataFile: parseDataFileStub,
+      config
+    });
+
+    config.core['import-timeout'] = 50;
+
+    // Act
+    const resultsIgnored = task2Promise(importer(2, {}, 'filepath', {
+      batchSize: 1000
+    }));
+
+    // Assert
+    return when.all([
+      expect(storageStub.transact).to.have.been.calledWith(sinon.match.any, 50)
     ]);
   });
 });
